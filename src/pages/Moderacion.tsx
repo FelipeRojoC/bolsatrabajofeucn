@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import * as api from '../lib/api'
 import { MOTIVOS_RECHAZO, PLANES, TIPOS } from '../lib/constants'
 import { fechaHora, formatearNumero, formatearPrecio, hace, porcentaje } from '../lib/format'
@@ -8,12 +9,13 @@ import { Icono } from '../components/Iconos'
 import { Avatar, Modal, Nota, Vacio } from '../components/UI'
 import { Cifra, GraficoLineas, Medidor } from '../components/Graficos'
 import { DetalleAviso } from '../components/DetalleAviso'
+import { PanelFerias } from '../components/PanelFerias'
 import { useApp } from '../state/contexto'
 
-type Pestana = 'cola' | 'reportes' | 'emprendimientos' | 'suscripciones' | 'actividad'
+type Pestana = 'cola' | 'reportes' | 'emprendimientos' | 'suscripciones' | 'ferias' | 'actividad'
 
 export const Moderacion = () => {
-  const { usuario, esModerador, revision, avisar, cambiarUsuario } = useApp()
+  const { usuario, esModerador, esAdmin, revision, avisar } = useApp()
   const [pestana, setPestana] = useState<Pestana>('cola')
   const [rechazando, setRechazando] = useState<Post | null>(null)
   const [motivo, setMotivo] = useState(MOTIVOS_RECHAZO[0])
@@ -47,14 +49,13 @@ export const Moderacion = () => {
       <div className="contenedor seccion">
         <div className="panel panel-relleno centro" style={{ padding: 44, maxWidth: 540, margin: '0 auto' }}>
           <Icono nombre="escudo" tam={30} className="tenue" style={{ margin: '0 auto 14px' }} />
-          <h2>Panel de moderación</h2>
+          <h2>Panel de administración</h2>
           <p className="tenue" style={{ margin: '10px 0 20px' }}>
-            Esta sección es solo para el equipo de la Comisión de Bienestar. Para verla en la demo, entra con la cuenta
-            de moderación.
+            Esta sección es solo para el equipo de la federación. Ingresa con tu usuario y contraseña.
           </p>
-          <button className="btn btn-primario" onClick={() => { cambiarUsuario('u-mod'); avisar('Entraste como moderación FEUCN', 'ok') }}>
-            <Icono nombre="escudo" tam={17} /> Entrar como moderación
-          </button>
+          <Link className="btn btn-primario" to="/admin">
+            <Icono nombre="candado" tam={17} /> Ir al ingreso
+          </Link>
         </div>
       </div>
     )
@@ -78,6 +79,7 @@ export const Moderacion = () => {
     { id: 'reportes', texto: 'Reportes', cuenta: d.reportes.length },
     { id: 'emprendimientos', texto: 'Emprendimientos', cuenta: d.empsPendientes.length },
     { id: 'suscripciones', texto: 'Suscripciones', cuenta: d.solicitudes.length },
+    { id: 'ferias', texto: 'Ferias' },
     { id: 'actividad', texto: 'Actividad' },
   ]
 
@@ -86,7 +88,7 @@ export const Moderacion = () => {
       <div className="contenedor contenedor-ancho seccion">
         <div className="seccion-titulo">
           <div>
-            <h1>Panel de moderación</h1>
+            <h1>{esAdmin ? 'Panel de administración' : 'Panel de moderación'}</h1>
             <p>
               Cola ordenada por riesgo automático: lo más sospechoso arriba. Cada decisión queda registrada con tu
               nombre y el motivo.
@@ -248,6 +250,9 @@ export const Moderacion = () => {
             )}
           </>
         )}
+
+        {/* ── Ferias ────────────────────────────────────────────────── */}
+        {pestana === 'ferias' && <PanelFerias />}
 
         {/* ── Actividad ─────────────────────────────────────────────── */}
         {pestana === 'actividad' && (

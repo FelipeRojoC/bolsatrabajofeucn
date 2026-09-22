@@ -70,7 +70,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       usuario,
       cambiarUsuario,
-      esModerador: usuario?.role === 'moderador',
+      esModerador: usuario?.role === 'moderador' || usuario?.role === 'admin',
+      esAdmin: usuario?.role === 'admin',
       tema,
       ponerTema: setTema,
       revision,

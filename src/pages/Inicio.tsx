@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import * as api from '../lib/api'
 import { TIPOS } from '../lib/constants'
-import { compacto, formatearNumero } from '../lib/format'
+import { compacto, fechaLarga, formatearNumero, formatearPrecio } from '../lib/format'
 import { calcularKPIs } from '../lib/analytics'
 import type { Post } from '../lib/types'
 import { TarjetaAviso } from '../components/TarjetaAviso'
@@ -44,6 +44,8 @@ export const Inicio = () => {
     const activos = api.filtrarPosts(todos, { status: ['aprobado'] })
     return {
       kpis: calcularKPIs(todos, api.listarEventos()),
+      feria: api.feriaVigente(),
+      postulacionesFeria: api.feriaVigente() ? api.listarPostulaciones(api.feriaVigente()!.id).length : 0,
       recientes: api.filtrarPosts(todos, { tipos: ['trabajo', 'venta'], orden: 'recientes' }).slice(0, 8),
       porExpirar: api.filtrarPosts(todos, { tipos: ['trabajo', 'venta'], orden: 'por-expirar' }).slice(0, 4),
       foro: api.filtrarPosts(todos, { tipos: ['perdido'], orden: 'recientes' }).slice(0, 3),
@@ -212,6 +214,40 @@ export const Inicio = () => {
           </div>
         </div>
       </section>
+
+      {/* Feria */}
+      {datos.feria && (
+        <section className="contenedor contenedor-ancho seccion" style={{ paddingTop: 0 }}>
+          <div className="panel panel-relleno bloque-feria">
+            <div className="crecer">
+              <span className={`etiqueta ${datos.feria.estado === 'abierta' ? 'etiqueta-ok' : 'etiqueta-aviso'}`}>
+                <Icono nombre="megafono" tam={12} />
+                {datos.feria.estado === 'abierta' ? 'Postulaciones abiertas' : 'Convocatoria cerrada'}
+              </span>
+              <h2 style={{ marginTop: 12 }}>{datos.feria.nombre}</h2>
+              <p className="tenue" style={{ marginTop: 8, maxWidth: '56ch' }}>
+                {fechaLarga(datos.feria.fecha)} · {datos.feria.lugar}. {datos.feria.puestos} puestos que se sortean
+                entre los seleccionados.
+              </p>
+              <div className="fila-envuelve" style={{ gap: 8, marginTop: 14 }}>
+                <span className="etiqueta etiqueta-contorno">
+                  {formatearPrecio(datos.feria.montoInscripcion)} de aporte
+                </span>
+                {datos.feria.pideAlimento && (
+                  <span className="etiqueta etiqueta-contorno">+ 1 alimento no perecible</span>
+                )}
+                <span className="etiqueta etiqueta-contorno">
+                  {datos.postulacionesFeria} de {datos.feria.cupos} cupos usados
+                </span>
+              </div>
+            </div>
+            <Link to="/feria" className="btn btn-primario btn-grande">
+              <Icono nombre="megafono" tam={18} />
+              {datos.feria.estado === 'abierta' ? 'Postular a la feria' : 'Ver la convocatoria'}
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Emprendimientos */}
       <section className="contenedor contenedor-ancho seccion">

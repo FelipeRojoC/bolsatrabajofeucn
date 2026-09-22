@@ -217,3 +217,39 @@ export const CONSEJOS_SEGURIDAD = [
   'Desconfía de quien te pida transferir antes de verse.',
   'Si algo se ve raro, usa el botón de reportar: la moderación lo revisa el mismo día.',
 ]
+
+/** Carreras del Campus Central, para los selectores de postulación. */
+export const CARRERAS = [
+  'Arquitectura',
+  'Contador Auditor',
+  'Derecho',
+  'Enfermería',
+  'Geología',
+  'Ingeniería Civil Ambiental',
+  'Ingeniería Civil en Minas',
+  'Ingeniería Civil Industrial',
+  'Ingeniería Civil Metalúrgica',
+  'Ingeniería Civil Química',
+  'Ingeniería Comercial',
+  'Ingeniería en Computación e Informática',
+  'Kinesiología',
+  'Medicina',
+  'Nutrición y Dietética',
+  'Pedagogía',
+  'Periodismo',
+  'Psicología',
+  'Química',
+  'Trabajo Social',
+  'Postgrado',
+  'Otra',
+]
+
+/** Condiciones que acepta quien postula a una feria. */
+export const CONDICIONES_FERIA = [
+  'Soy estudiante con matrícula vigente en la UCN Antofagasta.',
+  'El emprendimiento es mío o participo directamente en él.',
+  'Me comprometo a entregar el aporte de inscripción y un alimento no perecible antes del evento.',
+  'Voy a ocupar el puesto que me toque en el sorteo y a mantenerlo limpio.',
+  'Si no puedo asistir, aviso con al menos 48 horas para que el cupo lo tome otra persona.',
+  'No voy a vender alcohol, tabaco ni productos restringidos por el reglamento.',
+]

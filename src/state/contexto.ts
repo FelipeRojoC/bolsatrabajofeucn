@@ -7,7 +7,10 @@ export type TipoBrindis = 'info' | 'ok' | 'error'
 export interface AppCtx {
   usuario: User | null
   cambiarUsuario: (id: string | null) => void
+  /** Puede aprobar y rechazar publicaciones: moderación o administración. */
   esModerador: boolean
+  /** Acceso total, incluido el módulo de ferias. */
+  esAdmin: boolean
   tema: Tema
   ponerTema: (t: Tema) => void
   /** Se incrementa con cada escritura en la base: fuerza el recálculo de vistas. */

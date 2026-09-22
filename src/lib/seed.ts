@@ -2,9 +2,11 @@ import { MAX_DIAS_VIGENCIA, ZONAS_CAMPUS, puntoBase } from './constants'
 import type {
   AnalyticsEvent,
   Database,
+  Feria,
   Emprendimiento,
   Post,
   PostType,
+  PostulacionFeria,
   Report,
   SolicitudPlan,
   TipoLugar,
@@ -34,6 +36,14 @@ const puntoCerca = (tipo: TipoLugar, r: () => number) => {
 }
 
 export const USUARIOS: User[] = [
+  {
+    id: 'u-admin',
+    nombre: 'Administración FEUCN',
+    correo: 'admin@feucn.cl',
+    carrera: 'Federación de Estudiantes',
+    role: 'admin',
+    avatar: '#4a3aa7',
+  },
   {
     id: 'u-demo',
     nombre: 'Javiera Rojas',
@@ -662,18 +672,102 @@ const SOLICITUDES: SolicitudPlan[] = [
   },
 ]
 
+
+/* ── Ferias de emprendimiento ─────────────────────────────────────────── */
+
+const POSTULANTES: {
+  nombre: string
+  correo: string
+  carrera: string
+  rut: string
+  avance: number
+  emprendimiento: string
+  descripcion: string
+  mapau: boolean
+}[] = [
+  { nombre: 'Valentina Soto Araya', correo: 'valentina.soto@alumnos.ucn.cl', carrera: 'Enfermería', rut: '20.845.112-K', avance: 78, emprendimiento: 'Dulce Norte', descripcion: 'Repostería casera: tortas, brownies y kuchen por encargo.', mapau: false },
+  { nombre: 'Camila Araya Pinto', correo: 'camila.araya@alumnos.ucn.cl', carrera: 'Arquitectura', rut: '21.034.778-K', avance: 64, emprendimiento: 'Estudio Marea', descripcion: 'Fotografía y video para titulaciones y eventos de carrera.', mapau: false },
+  { nombre: 'Constanza Álvarez Rojas', correo: 'constanza.alvarez@alumnos.ucn.cl', carrera: 'Ingeniería Civil Ambiental', rut: '20.556.341-5', avance: 55, emprendimiento: 'Tejidos Atacama', descripcion: 'Gorros y chalecos tejidos a mano con lana teñida natural.', mapau: false },
+  { nombre: 'Ignacio Tapia Bravo', correo: 'ignacio.tapia@alumnos.ucn.cl', carrera: 'Ingeniería Civil de Minas', rut: '19.987.450-0', avance: 91, emprendimiento: 'Café Sísmico', descripcion: 'Café de especialidad en carrito, preparado al momento.', mapau: false },
+  { nombre: 'Fernanda Muñoz Silva', correo: 'fernanda.munoz@alumnos.ucn.cl', carrera: 'Psicología', rut: '21.122.093-7', avance: 47, emprendimiento: 'Uñas por Fer', descripcion: 'Manicure semipermanente y kapping con hora agendada.', mapau: false },
+  { nombre: 'Sebastián Núñez Vera', correo: 'sebastian.nunez@alumnos.ucn.cl', carrera: 'Ingeniería Comercial', rut: '20.334.819-3', avance: 83, emprendimiento: 'Preuniversitario Norte', descripcion: 'Clases de preparación PAES en grupos reducidos.', mapau: false },
+  { nombre: 'Matías Pizarro Leiva', correo: 'matias.pizarro@alumnos.ucn.cl', carrera: 'Ingeniería en Computación e Informática', rut: '20.771.265-5', avance: 72, emprendimiento: 'CodeaUCN', descripcion: 'Sitios web y tiendas online para emprendimientos chicos.', mapau: false },
+  { nombre: 'Antonia Herrera Paz', correo: 'antonia.herrera@alumnos.ucn.cl', carrera: 'Trabajo Social', rut: '21.245.880-5', avance: 38, emprendimiento: 'Raíz Andina', descripcion: 'Artesanía en greda y telar del altiplano.', mapau: true },
+  { nombre: 'Diego Cortés Mena', correo: 'diego.cortes@alumnos.ucn.cl', carrera: 'Derecho', rut: '20.119.473-3', avance: 66, emprendimiento: 'Segunda Vuelta', descripcion: 'Ropa de segunda mano seleccionada, drops los viernes.', mapau: false },
+  { nombre: 'Josefa Vega Cerda', correo: 'josefa.vega@alumnos.ucn.cl', carrera: 'Kinesiología', rut: '21.398.024-6', avance: 29, emprendimiento: 'Mermeladas Vega', descripcion: 'Mermeladas caseras de frutas de temporada del norte.', mapau: false },
+  { nombre: 'Tomás Riquelme Díaz', correo: 'tomas.riquelme@alumnos.ucn.cl', carrera: 'Geología', rut: '20.662.317-9', avance: 88, emprendimiento: 'Piedra Viva', descripcion: 'Minerales pulidos y joyería con piedras de la región.', mapau: false },
+  { nombre: 'Martina Salas Ibarra', correo: 'martina.salas@alumnos.ucn.cl', carrera: 'Periodismo', rut: '21.470.556-7', avance: 41, emprendimiento: 'Sticker Desierto', descripcion: 'Stickers y láminas ilustradas del norte grande.', mapau: true },
+]
+
+const construirFerias = (): { ferias: Feria[]; postulaciones: PostulacionFeria[] } => {
+  const feriaAbierta: Feria = {
+    id: 'f-1',
+    nombre: 'Feria de Emprendimientos FEUCN — Primavera',
+    descripcion:
+      'Tres días de feria en el patio del campus para que los emprendimientos de la comunidad UCN vendan y se den a conocer. Cada seleccionado recibe un puesto con mesa y silla.\n\nEl aporte de inscripción y el alimento no perecible se entregan en la oficina de la federación antes del evento. Lo recaudado se destina al fondo solidario estudiantil.',
+    fecha: iso(AHORA + 21 * DIA),
+    lugar: 'Patio de las banderas, Campus Central',
+    cupos: 40,
+    puestos: 24,
+    montoInscripcion: 1000,
+    pideAlimento: true,
+    estado: 'abierta',
+    abiertaDesde: iso(AHORA - 6 * DIA),
+    creadoEn: iso(AHORA - 8 * DIA),
+  }
+
+  const feriaPasada: Feria = {
+    id: 'f-0',
+    nombre: 'Feria de Emprendimientos FEUCN — Otoño',
+    descripcion: 'Edición anterior, ya realizada. Se mantiene para el historial y las estadísticas.',
+    fecha: iso(AHORA - 95 * DIA),
+    lugar: 'Patio de las banderas, Campus Central',
+    cupos: 30,
+    puestos: 20,
+    montoInscripcion: 1000,
+    pideAlimento: true,
+    estado: 'finalizada',
+    abiertaDesde: iso(AHORA - 130 * DIA),
+    cerradaEn: iso(AHORA - 110 * DIA),
+    creadoEn: iso(AHORA - 135 * DIA),
+  }
+
+  const postulaciones: PostulacionFeria[] = POSTULANTES.map((p, i) => ({
+    id: `pf-${i}`,
+    feriaId: 'f-1',
+    nombreCompleto: p.nombre,
+    correo: p.correo,
+    carrera: p.carrera,
+    rut: p.rut,
+    avanceCurricular: p.avance,
+    nombreEmprendimiento: p.emprendimiento,
+    descripcionBreve: p.descripcion,
+    esMapau: p.mapau,
+    aceptaCondiciones: true,
+    creadoEn: iso(AHORA - (6 - i * 0.4) * DIA),
+    estado: 'recibida' as const,
+    pagoInscripcion: false,
+    entregaAlimento: false,
+  }))
+
+  return { ferias: [feriaAbierta, feriaPasada], postulaciones }
+}
+
 export const crearBaseDemo = (): Database => {
   const r = rng(20260922)
   const posts = [...SEMILLAS.map((s) => construirPost(s, r)), ...construirHistoricos(r)]
+  const { ferias, postulaciones } = construirFerias()
   const emprendimientos = construirEmprendimientos(r)
   return {
-    version: 5,
+    version: 7,
     posts,
     emprendimientos,
     eventos: construirEventos(posts, emprendimientos, r),
     reportes: REPORTES,
     solicitudes: SOLICITUDES,
     usuarios: USUARIOS,
+    ferias,
+    postulaciones,
     guardados: ['p-6', 'p-15'],
     sesionUserId: 'u-demo',
   }

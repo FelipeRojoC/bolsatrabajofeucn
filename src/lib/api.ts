@@ -13,13 +13,17 @@
  */
 import { MAX_DIAS_VIGENCIA, MAX_RENOVACIONES, TERMINOS_RIESGO } from './constants'
 import { normalizar } from './format'
+import { limpiarRut } from './rut'
+import { credencialesValidas } from './auth'
 import { crearBaseDemo } from './seed'
 import type {
   AnalyticsEvent,
   Database,
   Emprendimiento,
   EventKind,
+  Feria,
   PlanId,
+  PostulacionFeria,
   Post,
   PostStatus,
   PostType,
@@ -41,7 +45,7 @@ const leer = (): Database => {
     const crudo = localStorage.getItem(CLAVE)
     if (crudo) {
       const parsed = JSON.parse(crudo) as Database
-      if (parsed.version === 5) {
+      if (parsed.version === 7) {
         cache = parsed
         return cache
       }
@@ -154,6 +158,32 @@ export const iniciarSesion = async (userId: string | null) => {
 }
 
 export const listarUsuarios = () => leer().usuarios
+
+/** Usuarios que se ofrecen en el menú de demostración (el admin entra por clave). */
+export const listarUsuariosDemo = () => leer().usuarios.filter((u) => u.role !== 'admin')
+
+/**
+ * Ingreso al panel con usuario y clave.
+ *
+ * Hoy compara contra la credencial local de `auth.ts`. Con Supabase conectado,
+ * esta función se reemplaza por `supabase.auth.signInWithPassword` y las
+ * cuentas dejan de existir en el cliente.
+ */
+export const iniciarSesionAdmin = async (
+  usuario: string,
+  clave: string,
+): Promise<{ ok: true; user: User } | { ok: false; motivo: string }> => {
+  if (!credencialesValidas(usuario, clave)) {
+    return demora({ ok: false, motivo: 'Usuario o clave incorrectos.' } as const, 500)
+  }
+  const db = leer()
+  const admin = db.usuarios.find((u) => u.role === 'admin')
+  if (!admin) return demora({ ok: false, motivo: 'No hay cuenta de administración configurada.' } as const)
+  db.sesionUserId = admin.id
+  escribir(db)
+  notificar()
+  return demora({ ok: true, user: admin } as const, 300)
+}
 
 // ── Avisos ──────────────────────────────────────────────────────────────────
 
@@ -535,3 +565,219 @@ export const reiniciarDemo = () => {
 }
 
 export const exportarDatos = () => JSON.stringify(leer(), null, 2)
+
+// ── Ferias de emprendimiento ────────────────────────────────────────────────
+
+export const listarFerias = (): Feria[] =>
+  [...leer().ferias].sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
+
+export const obtenerFeria = (feriaId: string) => leer().ferias.find((f) => f.id === feriaId)
+
+/** La feria que la comunidad ve en portada: la abierta, o la próxima cerrada. */
+export const feriaVigente = (): Feria | undefined => {
+  const ferias = listarFerias()
+  return ferias.find((f) => f.estado === 'abierta') ?? ferias.find((f) => f.estado === 'cerrada')
+}
+
+export const listarPostulaciones = (feriaId?: string): PostulacionFeria[] => {
+  const todas = leer().postulaciones
+  const lista = feriaId ? todas.filter((p) => p.feriaId === feriaId) : todas
+  return [...lista].sort((a, b) => a.creadoEn.localeCompare(b.creadoEn))
+}
+
+export const cuposRestantes = (feria: Feria) =>
+  Math.max(0, feria.cupos - listarPostulaciones(feria.id).length)
+
+export type BorradorPostulacion = Omit<
+  PostulacionFeria,
+  'id' | 'creadoEn' | 'estado' | 'puesto' | 'pagoInscripcion' | 'entregaAlimento' | 'avisadoEn'
+>
+
+export type ResultadoPostulacion =
+  | { ok: true; postulacion: PostulacionFeria; seCerro: boolean }
+  | { ok: false; motivo: string }
+
+/**
+ * Registra una postulación. Al alcanzar el cupo definido, la convocatoria se
+ * cierra sola: es la automatización que pidió la federación para no tener que
+ * estar mirando el contador.
+ */
+export const postularFeria = async (borrador: BorradorPostulacion): Promise<ResultadoPostulacion> => {
+  const db = leer()
+  const feria = db.ferias.find((f) => f.id === borrador.feriaId)
+  if (!feria) return demora({ ok: false, motivo: 'Esa feria ya no existe.' } as const)
+  if (feria.estado !== 'abierta') {
+    return demora({ ok: false, motivo: 'La convocatoria está cerrada.' } as const)
+  }
+
+  const yaPostulo = db.postulaciones.some(
+    (p) => p.feriaId === feria.id && limpiarRut(p.rut) === limpiarRut(borrador.rut),
+  )
+  if (yaPostulo) {
+    return demora({ ok: false, motivo: 'Ya hay una postulación registrada con ese RUT.' } as const)
+  }
+  if (db.postulaciones.filter((p) => p.feriaId === feria.id).length >= feria.cupos) {
+    feria.estado = 'cerrada'
+    feria.cerradaEn = new Date().toISOString()
+    escribir(db)
+    notificar()
+    return demora({ ok: false, motivo: 'Se acaba de llenar el cupo.' } as const)
+  }
+
+  const postulacion: PostulacionFeria = {
+    ...borrador,
+    id: id('pf'),
+    creadoEn: new Date().toISOString(),
+    estado: 'recibida',
+    pagoInscripcion: false,
+    entregaAlimento: false,
+  }
+  db.postulaciones.push(postulacion)
+
+  const total = db.postulaciones.filter((p) => p.feriaId === feria.id).length
+  const seCerro = total >= feria.cupos
+  if (seCerro) {
+    feria.estado = 'cerrada'
+    feria.cerradaEn = new Date().toISOString()
+  }
+
+  escribir(db)
+  notificar()
+  return demora({ ok: true, postulacion, seCerro } as const, 400)
+}
+
+export type BorradorFeria = Omit<Feria, 'id' | 'creadoEn' | 'cerradaEn'>
+
+export const crearFeria = async (borrador: BorradorFeria): Promise<Feria> => {
+  const db = leer()
+  const nueva: Feria = { ...borrador, id: id('f'), creadoEn: new Date().toISOString() }
+  db.ferias.unshift(nueva)
+  escribir(db)
+  notificar()
+  return demora(nueva, 300)
+}
+
+export const actualizarFeria = async (feriaId: string, cambios: Partial<Feria>) => {
+  const db = leer()
+  const f = db.ferias.find((x) => x.id === feriaId)
+  if (!f) return demora(undefined)
+  Object.assign(f, cambios)
+  if (cambios.estado === 'cerrada' && !f.cerradaEn) f.cerradaEn = new Date().toISOString()
+  if (cambios.estado === 'abierta') {
+    f.cerradaEn = undefined
+    f.abiertaDesde = f.abiertaDesde ?? new Date().toISOString()
+  }
+  escribir(db)
+  notificar()
+  return demora(f, 200)
+}
+
+export const cambiarEstadoPostulacion = async (
+  postulacionId: string,
+  estado: PostulacionFeria['estado'],
+) => {
+  const db = leer()
+  const p = db.postulaciones.find((x) => x.id === postulacionId)
+  if (!p) return demora(undefined)
+  p.estado = estado
+  if (estado !== 'seleccionada') p.puesto = undefined
+  escribir(db)
+  notificar()
+  return demora(p, 150)
+}
+
+export interface ResultadoSorteo {
+  asignados: number
+  /** Seleccionados que se quedaron sin número porque no alcanzaron los puestos. */
+  sinPuesto: number
+  /** MAPAU a la espera de que la federación les asigne puesto a mano. */
+  mapauPendientes: number
+}
+
+/**
+ * Sortea los puestos entre los seleccionados.
+ *
+ * Los emprendimientos MAPAU no entran al sorteo: su puesto lo asigna la
+ * federación a mano. Los números que ya tengan reservados se sacan del bombo
+ * para que nadie quede con el mismo.
+ */
+export const sortearPuestos = async (feriaId: string): Promise<ResultadoSorteo> => {
+  const db = leer()
+  const feria = db.ferias.find((f) => f.id === feriaId)
+  if (!feria) return demora({ asignados: 0, sinPuesto: 0, mapauPendientes: 0 })
+
+  const seleccionados = db.postulaciones.filter((p) => p.feriaId === feriaId && p.estado === 'seleccionada')
+  const mapau = seleccionados.filter((p) => p.esMapau)
+  const alBombo = seleccionados.filter((p) => !p.esMapau)
+
+  const reservados = new Set(mapau.filter((p) => p.puesto).map((p) => p.puesto as number))
+  const libres: number[] = []
+  for (let n = 1; n <= feria.puestos; n++) if (!reservados.has(n)) libres.push(n)
+
+  // Fisher-Yates: cada orden posible tiene la misma probabilidad.
+  for (let i = libres.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[libres[i], libres[j]] = [libres[j], libres[i]]
+  }
+
+  let asignados = 0
+  let sinPuesto = 0
+  for (const p of alBombo) {
+    const n = libres.pop()
+    if (n === undefined) {
+      p.puesto = undefined
+      sinPuesto++
+    } else {
+      p.puesto = n
+      asignados++
+    }
+  }
+
+  escribir(db)
+  notificar()
+  return demora(
+    { asignados, sinPuesto, mapauPendientes: mapau.filter((p) => !p.puesto).length },
+    400,
+  )
+}
+
+export const asignarPuesto = async (postulacionId: string, puesto: number | undefined) => {
+  const db = leer()
+  const p = db.postulaciones.find((x) => x.id === postulacionId)
+  if (!p) return demora(undefined)
+  p.puesto = puesto
+  escribir(db)
+  notificar()
+  return demora(p, 120)
+}
+
+/** Deja registro de que a los seleccionados ya se les avisó. */
+export const marcarAvisados = async (feriaId: string) => {
+  const db = leer()
+  const ahora = new Date().toISOString()
+  let cuantos = 0
+  for (const p of db.postulaciones) {
+    if (p.feriaId === feriaId && p.estado === 'seleccionada' && !p.avisadoEn) {
+      p.avisadoEn = ahora
+      cuantos++
+    }
+  }
+  escribir(db)
+  notificar()
+  return demora(cuantos, 200)
+}
+
+/** Control en terreno: aporte de inscripción y alimento no perecible. */
+export const marcarControl = async (
+  postulacionId: string,
+  campo: 'pagoInscripcion' | 'entregaAlimento',
+  valor: boolean,
+) => {
+  const db = leer()
+  const p = db.postulaciones.find((x) => x.id === postulacionId)
+  if (!p) return demora(undefined)
+  p[campo] = valor
+  escribir(db)
+  notificar()
+  return demora(p, 120)
+}

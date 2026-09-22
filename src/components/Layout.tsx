@@ -11,6 +11,7 @@ const NAV: { a: string; texto: string; icono: NombreIcono }[] = [
   { a: '/avisos', texto: 'Avisos', icono: 'cuadricula' },
   { a: '/perdidos', texto: '¿Se perdió esto?', icono: 'perdido' },
   { a: '/emprendimientos', texto: 'Emprendimientos', icono: 'tienda' },
+  { a: '/feria', texto: 'Feria', icono: 'megafono' },
   { a: '/estadisticas', texto: 'Estadísticas', icono: 'grafico' },
   { a: '/feucn', texto: 'La FEUCN', icono: 'info' },
 ]
@@ -79,7 +80,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             ))}
             {esModerador && (
               <NavLink to="/moderacion" className={({ isActive }) => `nav-enlace${isActive ? ' activo' : ''}`}>
-                Moderación
+                Panel
                 {enCola + reportesAbiertos > 0 && <span className="pestana-cuenta">{enCola + reportesAbiertos}</span>}
               </NavLink>
             )}
@@ -132,7 +133,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     </button>
                     {esModerador && (
                       <button className="menu-item" onClick={() => { navegar('/moderacion'); setMenuAbierto(false) }}>
-                        <Icono nombre="escudo" tam={17} /> Panel de moderación
+                        <Icono nombre="escudo" tam={17} /> Panel de administración
                       </button>
                     )}
                   </>
@@ -144,7 +145,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
                 <hr className="separador" />
                 <div className="menu-titulo">Cambiar de cuenta (demo)</div>
-                {api.listarUsuarios().slice(0, 2).map((u) => (
+                {api.listarUsuariosDemo().slice(0, 2).map((u) => (
                   <button
                     key={u.id}
                     className="menu-item"
@@ -158,6 +159,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     {usuario?.id === u.id && <Icono nombre="visto" tam={16} />}
                   </button>
                 ))}
+                {!esModerador && (
+                  <button className="menu-item" onClick={() => { navegar('/admin'); setMenuAbierto(false) }}>
+                    <Icono nombre="escudo" tam={17} /> Entrar al panel de la FEUCN
+                  </button>
+                )}
                 <button className="menu-item" onClick={() => { cambiarUsuario(null); setMenuAbierto(false) }}>
                   <Icono nombre="candado" tam={17} /> Salir
                 </button>
@@ -195,6 +201,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               <h4>Emprender</h4>
               <div className="pie-enlaces">
                 <Link to="/emprendimientos">Directorio</Link>
+                <Link to="/feria">Postular a la feria</Link>
                 <Link to="/planes">Planes y precios</Link>
                 <Link to="/estadisticas">Estadísticas públicas</Link>
               </div>

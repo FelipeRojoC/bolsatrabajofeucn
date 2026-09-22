@@ -211,7 +211,68 @@ export interface Database {
   reportes: Report[]
   solicitudes: SolicitudPlan[]
   usuarios: User[]
+  ferias: Feria[]
+  postulaciones: PostulacionFeria[]
   /** Avisos que el usuario actual guardó (solo local). */
   guardados: string[]
   sesionUserId: string | null
+}
+
+/* ── Ferias de emprendimiento ─────────────────────────────────────────────
+   La federación arma ferias cada cierto tiempo. La postulación se abre, se
+   llena hasta el cupo definido y se cierra sola; después la administración
+   selecciona, sortea los puestos y avisa por correo.                        */
+
+export type EstadoFeria = 'borrador' | 'abierta' | 'cerrada' | 'finalizada'
+
+export interface Feria {
+  id: string
+  nombre: string
+  descripcion: string
+  /** Día del evento. */
+  fecha: string
+  lugar: string
+  /** Al llegar a esta cantidad de postulaciones, la convocatoria se cierra sola. */
+  cupos: number
+  /** Puestos físicos disponibles para sortear entre los seleccionados. */
+  puestos: number
+  /** Aporte de inscripción en pesos. Se paga en la oficina, no en el sitio. */
+  montoInscripcion: number
+  /** Además del aporte, se pide un alimento no perecible. */
+  pideAlimento: boolean
+  estado: EstadoFeria
+  abiertaDesde?: string
+  cerradaEn?: string
+  creadoEn: string
+}
+
+export type EstadoPostulacion = 'recibida' | 'seleccionada' | 'no-seleccionada'
+
+export interface PostulacionFeria {
+  id: string
+  feriaId: string
+  nombreCompleto: string
+  correo: string
+  carrera: string
+  /** RUT con dígito verificador, validado al postular. */
+  rut: string
+  /** Avance curricular declarado, en porcentaje. */
+  avanceCurricular: number
+  nombreEmprendimiento: string
+  descripcionBreve: string
+  /**
+   * Los emprendimientos MAPAU quedan fuera del sorteo: su puesto lo asigna la
+   * administración a mano.
+   */
+  esMapau: boolean
+  aceptaCondiciones: boolean
+  creadoEn: string
+  estado: EstadoPostulacion
+  /** Número de puesto asignado por sorteo, o a mano si es MAPAU. */
+  puesto?: number
+  /** Control en terreno el día de la feria. */
+  pagoInscripcion: boolean
+  entregaAlimento: boolean
+  /** Cuándo se le avisó que quedó seleccionado. */
+  avisadoEn?: string
 }

@@ -18,6 +18,8 @@ const MisAvisos = lazy(() => import('./pages/MisAvisos').then((m) => ({ default:
 const Estadisticas = lazy(() => import('./pages/Estadisticas').then((m) => ({ default: m.Estadisticas })))
 const Feucn = lazy(() => import('./pages/Feucn').then((m) => ({ default: m.Feucn })))
 const Moderacion = lazy(() => import('./pages/Moderacion').then((m) => ({ default: m.Moderacion })))
+const Feria = lazy(() => import('./pages/Feria').then((m) => ({ default: m.Feria })))
+const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })))
 
 /** Cambiar de página vuelve arriba; sin esto se aterriza a media página. */
 const AlCambiarDeRuta = () => {
@@ -52,7 +54,9 @@ export default function App() {
           <Route path="/mis-avisos" element={<MisAvisos />} />
           <Route path="/estadisticas" element={<Estadisticas />} />
           <Route path="/feucn" element={<Feucn />} />
+          <Route path="/feria" element={<Feria />} />
           <Route path="/moderacion" element={<Moderacion />} />
+          <Route path="/admin" element={<Admin />} />
           <Route
             path="*"
             element={

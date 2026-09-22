@@ -176,8 +176,9 @@
 .marca-glifo img { width: 100%; height: 100%; object-fit: contain; }
 
 .logo-heroe {
-  width: clamp(130px, 22vw, 210px); height: auto; border-radius: 50%;
-  background: #fff; padding: 10px; flex: none;
+  /* Cuadrado, no círculo: el recorte redondo se come la palabra FEUCN. */
+  width: clamp(140px, 22vw, 215px); height: auto; border-radius: var(--r-xl);
+  background: #fff; padding: 14px; flex: none;
   box-shadow: var(--sombra-3), 0 0 0 1px var(--borde);
 }
 .marca-texto { display: flex; flex-direction: column; line-height: 1.1; }
@@ -573,6 +574,15 @@
 @media (max-width: 899px) { .heroe-marca { order: -1; } }
 .heroe-marca-lema { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; }
 .heroe-marca-sub { font-size: 0.8rem; color: var(--tinta-2); }
+
+.bloque-feria {
+  display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+  padding: 26px; border-left: 4px solid transparent;
+  border-image: var(--vitral) 1;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--vitral-3) 8%, transparent), transparent 55%),
+    var(--superficie);
+}
 .heroe-bajada { font-size: clamp(1rem, 0.95rem + 0.4vw, 1.15rem); color: var(--tinta-2); max-width: 56ch; margin-top: 14px; }
 .heroe-acciones { display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap; }
 .heroe-pildoras { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
