@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import * as api from '../lib/api'
 import type { User } from '../lib/types'
 import { Icono } from '../components/Iconos'
+import { hayBackend } from '../lib/supabase'
 import { Ctx, type AppCtx, type Tema, type TipoBrindis } from './contexto'
 
 interface Brindis {
@@ -15,6 +16,7 @@ const CLAVE_TEMA = 'feucn-tema'
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [revision, setRevision] = useState(0)
   const [brindis, setBrindis] = useState<Brindis[]>([])
+  const [cargando, setCargando] = useState(hayBackend())
   const [tema, setTema] = useState<Tema>(() => {
     try {
       return (localStorage.getItem(CLAVE_TEMA) as Tema) || 'sistema'
@@ -50,6 +52,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(t)
   }, [])
 
+  // Con backend, la caché se llena desde la base al abrir y al volver a la
+  // pestaña: si alguien publicó algo desde otro dispositivo, aparece.
+  useEffect(() => {
+    if (!hayBackend()) {
+      setCargando(false)
+      return
+    }
+    void api.sincronizar().finally(() => setCargando(false))
+
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') void api.sincronizar()
+    }
+    document.addEventListener('visibilitychange', alVolver)
+    return () => document.removeEventListener('visibilitychange', alVolver)
+  }, [])
+
   // La sesión se deriva de la revisión actual: no hace falta duplicarla en estado.
   // `revision` no se usa dentro del cálculo; está para invalidarlo cuando la
   // capa de datos avisa que algo cambió.
@@ -76,8 +94,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       ponerTema: setTema,
       revision,
       avisar,
+      cargando,
+      conBackend: hayBackend(),
     }),
-    [usuario, cambiarUsuario, tema, revision, avisar],
+    [usuario, cambiarUsuario, tema, revision, avisar, cargando],
   )
 
   return (

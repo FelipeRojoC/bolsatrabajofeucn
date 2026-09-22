@@ -451,7 +451,11 @@ Federación de Estudiantes UCN Antofagasta`
       avisar('Son demasiados correos para abrirlos de una. Copia la lista y pégala en tu cliente de correo.', 'error')
       return
     }
-    window.location.href = url
+    // Un enlace temporal en vez de tocar location: no deja la página a medio
+    // navegar si el sistema no tiene cliente de correo configurado.
+    const a = document.createElement('a')
+    a.href = url
+    a.click()
   }
 
   return (

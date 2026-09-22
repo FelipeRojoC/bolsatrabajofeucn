@@ -142,8 +142,16 @@ En [supabase.com](https://supabase.com) → *New project*. Anota la contraseña 
 la base cuando te la pida. La región más cercana es *South America (São Paulo)*.
 
 **2. Cargar el esquema**
-Menú lateral → **SQL Editor** → *New query* → pega `supabase/schema.sql` completo
-→ **Run**. Se puede volver a ejecutar sin romper nada.
+Menú lateral → **SQL Editor** → *New query*. Pega y ejecuta, en este orden:
+
+1. `supabase/schema.sql` — tablas, índices, triggers y políticas.
+2. `supabase/02-seguridad.sql` — endurecimiento. **No es opcional**: corrige una
+   escalada de privilegios que dejaba a cualquier cuenta nombrarse administradora.
+3. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
+   para recorrer el sitio con contenido. Se borra con dos `delete` que están
+   comentados al principio del archivo.
+
+Los tres se pueden volver a ejecutar sin romper nada.
 
 **3. Conectar el frontend**
 Project Settings → **API**. Copia `Project URL` y la clave `anon public`, y crea
@@ -180,27 +188,66 @@ npx supabase functions deploy avisar-seleccionados
 npx supabase secrets set RESEND_API_KEY=re_xxx CORREO_REMITENTE="FEUCN <feria@feucn.cl>"
 ```
 
-**7. Migrar las funciones**
-`hayBackend()` ya devuelve `true`. Ahora se va reemplazando el cuerpo de cada
-función de `src/lib/api.ts` por su llamada a Supabase, una por una y probando
-entremedio. Mientras una siga en localStorage, sigue funcionando igual.
+### Cómo hablan la aplicación y la base
+
+Las páginas leen de forma síncrona (`listarTodos()`, `listarFerias()`, …) y
+Supabase es asíncrono. En vez de reescribir cada página con estados de carga, la
+aplicación mantiene una **caché local que refleja la base**:
+
+- Al abrir, y al volver a la pestaña, `sincronizar()` trae todo de Supabase y
+  llena la caché. RLS decide qué llega: una visita anónima recibe los avisos
+  publicados; el equipo recibe además la cola, los reportes y las postulaciones.
+- Las escrituras van a Supabase y, al confirmarse, vuelven a sincronizar.
+- Sin variables de entorno, la misma caché se llena con datos de demostración y
+  la aplicación funciona igual, sin red.
+
+Eso hace que lo local nunca sea la verdad cuando hay base: se descarta al
+arrancar y se vuelve a llenar desde el servidor. Lo único que sigue siendo
+propio del navegador son los avisos guardados con el corazón, que son una
+comodidad de cada persona y no tienen por qué viajar.
+
+### Seguridad
+
+Lo que se cerró, y cómo comprobarlo:
+
+| Vía de ataque | Qué se hizo |
+|---|---|
+| **Escalada de privilegios** | Un usuario con cuenta podía hacerse `admin` editando su propio perfil: RLS autoriza la fila, no la columna. Ahora un trigger lo impide y además se revocó el permiso de escritura sobre `rol`. Para nombrar moderadores está `asignar_rol()`. |
+| **Falsear estadísticas** | El autor de un aviso podía escribir `vistas = 99999`, autopublicarse o estirar su vigencia. Un trigger restaura contadores, riesgo y fechas en cada edición que no venga del equipo. |
+| **XSS por enlaces** | Un `javascript:` guardado en el sitio web de un emprendimiento se ejecutaba al pulsarlo. `urlSegura()` deja pasar solo `http`/`https`, y los handles de redes se validan contra una lista de caracteres. |
+| **XSS en general** | La política de contenido bloquea cualquier script que no venga del propio origen. La hoja de control imprimible, que arma HTML a mano, escapa todos los campos de usuario. |
+| **Clickjacking** | `frame-ancestors 'none'` y `X-Frame-Options: DENY`. |
+| **Fuga de datos personales** | Las postulaciones traen RUT y correo: solo las lee el equipo. Los perfiles, solo su dueño. Los eventos de analítica nunca guardan quién hizo el clic. |
+| **Basura en la base** | Límites de longitud en cada campo de texto, máximo de imágenes, RUT validado con dígito verificador en el servidor y correo validado por formato. |
+| **Inflar contadores** | `registrar_evento()` comprueba que el aviso exista y esté publicado; escribir la tabla de eventos a mano quedó revocado. |
+| **Ventanas robadas** | Todo enlace externo lleva `rel="noopener noreferrer"`. |
+| **Dependencias** | `npm audit` en cero. |
+
+Lo que **no** está cubierto y depende de la configuración del proyecto:
+
+1. **Captcha en la postulación de ferias.** Postular no pide cuenta —así tiene
+   que ser— pero eso deja abierto que un script genere RUT válidos y llene los
+   cupos. Supabase trae hCaptcha y Turnstile en Authentication → Settings.
+2. **Protección de contraseñas filtradas** — Authentication → Policies.
+3. **Límite de intentos de ingreso** — Authentication → Rate limits.
+4. **URLs de redirección** — Authentication → URL Configuration: deja solo el
+   dominio real. Con un comodín, un atacante puede llevarse el token de sesión.
+
+Ningún sistema es invulnerable; lo anterior cierra las vías que esta aplicación
+tiene abiertas por su propia forma.
 
 ### Lo que sigue pendiente
 
-1. **Autenticación institucional.** Hoy la sesión se cambia desde un menú de
-   demostración y el panel entra con una clave escrita en el código. Con
-   Supabase ya configurado, falta cambiar el ingreso a `signInWithPassword` y
-   **borrar `ADMIN_LOCAL` de `src/lib/auth.ts`**.
-2. **Conteo de eventos.** En el cliente es falsificable. El esquema ya trae
-   `registrar_evento()` para que lo escriba el servidor.
-3. **Tiles del mapa.** `MapaLeaflet.tsx` usa los tiles públicos de
+1. **Autenticación de estudiantes.** El panel ya entra por Supabase Auth, pero
+   publicar avisos todavía usa una sesión de demostración. Falta el registro con
+   correo institucional para el resto del sitio.
+2. **Tiles del mapa.** `MapaLeaflet.tsx` usa los tiles públicos de
    OpenStreetMap, que no cubren una aplicación con tráfico real. Hay que
    contratar un proveedor (MapTiler, Stadia, Mapbox). Si fallan, el mapa avisa
    y el punto igual queda guardado.
-4. **Imágenes.** Hoy se guardan como data URL comprimidas; con backend van a
-   Supabase Storage y en el aviso queda solo la URL.
-5. **Correos de aprobación y rechazo** de avisos, del mismo modo que los de la
-   feria.
+3. **Imágenes.** Hoy se guardan como data URL comprimidas; deberían ir a
+   Supabase Storage y dejar en el aviso solo la URL.
+4. **Correos de aprobación y rechazo** de avisos, igual que los de la feria.
 
 ---
 

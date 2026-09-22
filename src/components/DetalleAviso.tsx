@@ -271,16 +271,16 @@ export const DetalleAviso = ({ post, alCerrar }: Props) => {
               </div>
               <div className="contacto-abierto">
                 {post.contacto.whatsapp && (
-                  <a className="red-pastilla" href={linkWhatsApp(post.contacto.whatsapp, mensajeWA)} target="_blank" rel="noreferrer">
+                  <a className="red-pastilla" href={linkWhatsApp(post.contacto.whatsapp, mensajeWA)} target="_blank" rel="noopener noreferrer">
                     <Icono nombre="whatsapp" tam={16} /> {post.contacto.whatsapp}
                   </a>
                 )}
                 <a className="red-pastilla" href={`mailto:${post.contacto.correo}?subject=${encodeURIComponent(`Bolsa FEUCN — ${post.titulo}`)}`}>
                   <Icono nombre="correo" tam={16} /> {post.contacto.correo}
                 </a>
-                {post.contacto.instagram && (
-                  <a className="red-pastilla red-ig" href={linkInstagram(post.contacto.instagram)} target="_blank" rel="noreferrer">
-                    <Icono nombre="instagram" tam={16} /> {handleInstagram(post.contacto.instagram)}
+                {linkInstagram(post.contacto.instagram ?? '') && (
+                  <a className="red-pastilla red-ig" href={linkInstagram(post.contacto.instagram!)} target="_blank" rel="noopener noreferrer">
+                    <Icono nombre="instagram" tam={16} /> {handleInstagram(post.contacto.instagram!)}
                   </a>
                 )}
               </div>

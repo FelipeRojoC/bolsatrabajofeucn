@@ -223,7 +223,7 @@ export const Feucn = () => (
               <div className="mayus tenue">Escríbenos</div>
               <a className="red-pastilla" href="mailto:contacto@feucn.cl"><Icono nombre="correo" tam={16} /> contacto@feucn.cl</a>
               <a className="red-pastilla" href="mailto:bienestar@feucn.cl"><Icono nombre="escudo" tam={16} /> bienestar@feucn.cl</a>
-              <a className="red-pastilla red-ig" href="https://instagram.com/feucn" target="_blank" rel="noreferrer">
+              <a className="red-pastilla red-ig" href="https://instagram.com/feucn" target="_blank" rel="noopener noreferrer">
                 <Icono nombre="instagram" tam={16} /> @feucn
               </a>
             </div>

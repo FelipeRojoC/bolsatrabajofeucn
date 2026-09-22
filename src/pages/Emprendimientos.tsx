@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import * as api from '../lib/api'
 import { PLANES, RUBROS_EMPRENDIMIENTO } from '../lib/constants'
-import { compacto, fechaLarga, formatearPrecio, handleInstagram, linkInstagram, linkWhatsApp, normalizar } from '../lib/format'
+import { compacto, fechaLarga, formatearPrecio, handleInstagram, linkInstagram, linkWhatsApp, handleSeguro, normalizar, urlSegura } from '../lib/format'
 import type { Emprendimiento, PlanId } from '../lib/types'
 import { Icono } from '../components/Iconos'
 import { Modal, Nota, Vacio } from '../components/UI'
@@ -206,18 +206,18 @@ export const Emprendimientos = () => {
               <div className="panel panel-relleno columna" style={{ gap: 10 }}>
                 <div className="mayus tenue">Dónde encontrarlos</div>
                 <div className="emp-redes" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                  {actual.instagram && (
-                    <a className="red-pastilla red-ig" href={linkInstagram(actual.instagram)} target="_blank" rel="noreferrer" onClick={() => clicRed(actual)}>
-                      <Icono nombre="instagram" tam={16} /> {handleInstagram(actual.instagram)}
+                  {linkInstagram(actual.instagram ?? '') && (
+                    <a className="red-pastilla red-ig" href={linkInstagram(actual.instagram!)} target="_blank" rel="noopener noreferrer" onClick={() => clicRed(actual)}>
+                      <Icono nombre="instagram" tam={16} /> {handleInstagram(actual.instagram!)}
                     </a>
                   )}
-                  {actual.plan !== 'vitrina' && actual.tiktok && (
-                    <a className="red-pastilla" href={`https://tiktok.com/@${actual.tiktok}`} target="_blank" rel="noreferrer" onClick={() => clicRed(actual)}>
-                      <Icono nombre="tiktok" tam={16} /> @{actual.tiktok}
+                  {actual.plan !== 'vitrina' && handleSeguro(actual.tiktok) && (
+                    <a className="red-pastilla" href={`https://tiktok.com/@${handleSeguro(actual.tiktok)}`} target="_blank" rel="noopener noreferrer" onClick={() => clicRed(actual)}>
+                      <Icono nombre="tiktok" tam={16} /> @{handleSeguro(actual.tiktok)}
                     </a>
                   )}
-                  {actual.plan !== 'vitrina' && actual.web && (
-                    <a className="red-pastilla" href={actual.web} target="_blank" rel="noreferrer" onClick={() => clicRed(actual)}>
+                  {actual.plan !== 'vitrina' && urlSegura(actual.web) && (
+                    <a className="red-pastilla" href={urlSegura(actual.web)} target="_blank" rel="noopener noreferrer" onClick={() => clicRed(actual)}>
                       <Icono nombre="web" tam={16} /> Sitio web
                     </a>
                   )}
@@ -226,7 +226,7 @@ export const Emprendimientos = () => {
                       className="red-pastilla"
                       href={linkWhatsApp(actual.whatsapp, `Hola ${actual.nombre}, los vi en el directorio de la FEUCN.`)}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       onClick={() => clicRed(actual)}
                     >
                       <Icono nombre="whatsapp" tam={16} /> Escribir por WhatsApp

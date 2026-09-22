@@ -15,6 +15,18 @@ import { MAX_DIAS_VIGENCIA, MAX_RENOVACIONES, TERMINOS_RIESGO } from './constant
 import { normalizar } from './format'
 import { limpiarRut } from './rut'
 import { TABLAS, hayBackend, supabase } from './supabase'
+import {
+  emprendimientoAFila,
+  feriaAFila,
+  filaAEmprendimiento,
+  filaAFeria,
+  filaAPost,
+  filaAPostulacion,
+  postAFila,
+  postulacionAFila,
+  traerTodo,
+} from './db'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { crearBaseDemo } from './seed'
 import type {
   AnalyticsEvent,
@@ -34,10 +46,26 @@ import type {
 } from './types'
 
 const CLAVE = 'feucn-bolsa-v1'
+const VERSION = 8
 const DIA = 86_400_000
 
 let cache: Database | null = null
 const oyentes = new Set<() => void>()
+
+/** Base vacía: con backend, los datos llegan de Supabase al sincronizar. */
+const baseVacia = (): Database => ({
+  version: VERSION,
+  posts: [],
+  emprendimientos: [],
+  eventos: [],
+  reportes: [],
+  solicitudes: [],
+  usuarios: [],
+  ferias: [],
+  postulaciones: [],
+  guardados: [],
+  sesionUserId: null,
+})
 
 const leer = (): Database => {
   if (cache) return cache
@@ -45,15 +73,19 @@ const leer = (): Database => {
     const crudo = localStorage.getItem(CLAVE)
     if (crudo) {
       const parsed = JSON.parse(crudo) as Database
-      if (parsed.version === 8) {
+      if (parsed.version === VERSION) {
         cache = parsed
+        // Con backend, lo local es solo una copia de trabajo: nunca la verdad.
+        if (hayBackend()) {
+          cache = { ...baseVacia(), guardados: parsed.guardados ?? [] }
+        }
         return cache
       }
     }
   } catch {
-    // Storage bloqueado (modo privado) o JSON corrupto: se parte de la demo.
+    // Storage bloqueado (modo privado) o JSON corrupto: se parte de cero.
   }
-  cache = crearBaseDemo()
+  cache = hayBackend() ? baseVacia() : crearBaseDemo()
   escribir(cache)
   return cache
 }
@@ -78,6 +110,61 @@ export const suscribir = (fn: () => void) => {
 const demora = <T,>(valor: T, ms = 140): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(valor), ms))
 
+/**
+ * Corre una operación contra Supabase, si hay backend configurado.
+ * Devuelve `{ remoto: false }` cuando toca seguir por el camino local, para
+ * que cada función pueda decidir sin repetir la comprobación.
+ */
+const remoto = async <T,>(
+  fn: (sb: SupabaseClient) => Promise<T>,
+): Promise<{ remoto: true; valor: T } | { remoto: false }> => {
+  if (!hayBackend()) return { remoto: false }
+  const sb = await supabase()
+  if (!sb) return { remoto: false }
+  return { remoto: true, valor: await fn(sb) }
+}
+
+const fallar = (error: { message: string } | null) => {
+  if (error) throw new Error(error.message)
+}
+
+let sincronizando: Promise<void> | null = null
+
+/**
+ * Trae el estado completo desde Supabase a la caché local.
+ *
+ * Las páginas leen de forma síncrona (`listarTodos`, `listarFerias`, …), así
+ * que la caché es lo que mantiene esa interfaz mientras la verdad vive en la
+ * base. Cada escritura la refresca.
+ */
+export const sincronizar = async (): Promise<boolean> => {
+  if (!hayBackend()) return false
+  // Varias escrituras seguidas comparten una sola descarga.
+  if (sincronizando) {
+    await sincronizando
+    return true
+  }
+  sincronizando = (async () => {
+    const sb = await supabase()
+    if (!sb) return
+    try {
+      const datos = await traerTodo(sb)
+      const db = leer()
+      Object.assign(db, datos)
+      escribir(db)
+      notificar()
+    } catch {
+      // Sin red, la app sigue con lo que tenga en caché.
+    }
+  })()
+  try {
+    await sincronizando
+  } finally {
+    sincronizando = null
+  }
+  return true
+}
+
 const id = (prefijo: string) => `${prefijo}-${Math.random().toString(36).slice(2, 9)}`
 
 // ── Vigencia ────────────────────────────────────────────────────────────────
@@ -87,6 +174,8 @@ const id = (prefijo: string) => `${prefijo}-${Math.random().toString(36).slice(2
  * En el backend esto sería un job programado; acá corre en cada lectura.
  */
 export const barrerExpirados = (): number => {
+  // Con backend, el trabajo real lo hace el cron `expirar_avisos()` en la base;
+  // esto solo mantiene la caché al día entre sincronizaciones.
   const db = leer()
   const ahora = Date.now()
   let cambios = 0
@@ -332,6 +421,20 @@ export const crearPost = async (borrador: BorradorPost): Promise<Post> => {
     banderas,
   }
 
+  const r = await remoto(async (sb) => {
+    const { data, error } = await sb
+      .from(TABLAS.avisos)
+      .insert(postAFila(nuevo))
+      .select('*, respuestas_foro(*)')
+      .single()
+    fallar(error)
+    return filaAPost(data)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return r.valor
+  }
+
   db.posts.unshift(nuevo)
   escribir(db)
   notificar()
@@ -343,11 +446,42 @@ export const moderarPost = async (
   accion: 'aprobar' | 'rechazar',
   opciones: { revisadoPor: string; motivo?: string; nota?: string } = { revisadoPor: 'Moderación FEUCN' },
 ): Promise<Post | undefined> => {
+  const ahora = Date.now()
+
+  const r = await remoto(async (sb) => {
+    const cambios: Record<string, unknown> = {
+      status: accion === 'aprobar' ? 'aprobado' : 'rechazado',
+      moderado_por: opciones.revisadoPor,
+      moderado_en: new Date(ahora).toISOString(),
+      motivo_rechazo: opciones.motivo ?? null,
+      nota_moderacion: opciones.nota ?? null,
+    }
+    if (accion === 'aprobar') {
+      const { data: actual } = await sb.from(TABLAS.avisos).select('dias_vigencia').eq('id', postId).single()
+      const dias = actual?.dias_vigencia ?? MAX_DIAS_VIGENCIA
+      cambios.publicado_en = new Date(ahora).toISOString()
+      cambios.expira_en = new Date(ahora + dias * DIA).toISOString()
+    }
+    const { data, error } = await sb
+      .from(TABLAS.avisos)
+      .update(cambios)
+      .eq('id', postId)
+      .select('*, respuestas_foro(*)')
+      .single()
+    fallar(error)
+    await sb.from(TABLAS.reportes).update({ resuelto: true }).eq('aviso_id', postId)
+    if (accion === 'aprobar') await sb.rpc('registrar_evento', { p_kind: 'publicacion', p_target_id: postId })
+    return filaAPost(data)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return r.valor
+  }
+
   const db = leer()
   const post = db.posts.find((p) => p.id === postId)
   if (!post) return demora(undefined)
 
-  const ahora = Date.now()
   post.status = accion === 'aprobar' ? 'aprobado' : 'rechazado'
   post.moderacion = {
     revisadoPor: opciones.revisadoPor,
@@ -385,6 +519,23 @@ export const renovarPost = async (postId: string): Promise<{ ok: boolean; motivo
   post.renovaciones += 1
   post.status = 'aprobado'
   post.expiraEn = new Date(Date.now() + post.diasVigencia * DIA).toISOString()
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb
+      .from(TABLAS.avisos)
+      .update({
+        renovaciones: post.renovaciones,
+        status: 'aprobado',
+        expira_en: post.expiraEn,
+      })
+      .eq('id', postId)
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return { ok: true, post }
+  }
+
   escribir(db)
   notificar()
   return demora({ ok: true, post }, 250)
@@ -396,6 +547,16 @@ export const archivarPost = async (postId: string, resuelto = true): Promise<Pos
   if (!post) return demora(undefined)
   post.status = 'archivado'
   post.resuelto = resuelto
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb.from(TABLAS.avisos).update({ status: 'archivado', resuelto }).eq('id', postId)
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return post
+  }
+
   escribir(db)
   notificar()
   return demora(post, 200)
@@ -405,6 +566,22 @@ export const responderForo = async (postId: string, autor: string, carrera: stri
   const db = leer()
   const post = db.posts.find((p) => p.id === postId)
   if (!post) return demora(undefined)
+  const r = await remoto(async (sb) => {
+    const { data: sesion } = await sb.auth.getUser()
+    const { error } = await sb.from(TABLAS.respuestas).insert({
+      aviso_id: postId,
+      autor_id: sesion.user?.id ?? null,
+      autor_nombre: autor,
+      autor_carrera: carrera,
+      mensaje,
+    })
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return obtenerPost(postId)
+  }
+
   post.respuestas = [
     ...(post.respuestas ?? []),
     { id: id('r'), autor, carrera, mensaje, creadoEn: new Date().toISOString() },
@@ -419,6 +596,16 @@ export const marcarResuelto = async (postId: string, resuelto: boolean) => {
   const post = db.posts.find((p) => p.id === postId)
   if (!post) return demora(undefined)
   post.resuelto = resuelto
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb.from(TABLAS.avisos).update({ resuelto }).eq('id', postId)
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return post
+  }
+
   escribir(db)
   notificar()
   return demora(post, 150)
@@ -464,6 +651,19 @@ export const registrarEvento = (
   db.eventos.push({ id: id('ev'), kind, targetId, targetType, postType: post?.type, at })
   escribir(db)
   notificar()
+
+  // El contador de verdad lo lleva el servidor; acá se refleja al tiro para
+  // que la tarjeta no se quede en el número viejo mientras viaja la petición.
+  if (hayBackend()) {
+    void (async () => {
+      const sb = await supabase()
+      await sb?.rpc('registrar_evento', {
+        p_kind: kind,
+        p_target_id: targetId,
+        p_target_type: targetType,
+      })
+    })()
+  }
 }
 
 export const listarEventos = (): AnalyticsEvent[] => leer().eventos
@@ -481,6 +681,21 @@ export const reportarPost = async (postId: string, motivo: string, detalle: stri
     reportadoPor,
     resuelto: false,
   }
+  const r = await remoto(async (sb) => {
+    const { data: sesion } = await sb.auth.getUser()
+    const { error } = await sb.from(TABLAS.reportes).insert({
+      aviso_id: postId,
+      motivo,
+      detalle: detalle || null,
+      reportado_por: sesion.user?.id ?? null,
+    })
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return reporte
+  }
+
   db.reportes.unshift(reporte)
   escribir(db)
   notificar()
@@ -491,11 +706,21 @@ export const listarReportes = () => leer().reportes
 
 export const resolverReporte = async (reporteId: string) => {
   const db = leer()
-  const r = db.reportes.find((x) => x.id === reporteId)
-  if (r) r.resuelto = true
+  const local = db.reportes.find((x) => x.id === reporteId)
+  if (local) local.resuelto = true
+
+  const res = await remoto(async (sb) => {
+    const { error } = await sb.from(TABLAS.reportes).update({ resuelto: true }).eq('id', reporteId)
+    fallar(error)
+  })
+  if (res.remoto) {
+    await sincronizar()
+    return local
+  }
+
   escribir(db)
   notificar()
-  return demora(r, 150)
+  return demora(local, 150)
 }
 
 // ── Emprendimientos ─────────────────────────────────────────────────────────
@@ -527,6 +752,23 @@ export const crearEmprendimiento = async (borrador: BorradorEmprendimiento): Pro
     suscripcionStatus: borrador.plan === 'vitrina' ? 'activa' : 'pendiente-pago',
     stats: { vistas: 0, clicsContacto: 0, guardados: 0, compartidos: 0 },
   }
+  const r = await remoto(async (sb) => {
+    const { data, error } = await sb
+      .from(TABLAS.emprendimientos)
+      .insert({
+        ...emprendimientoAFila(borrador),
+        suscripcion_hasta: nuevo.suscripcionHasta,
+      })
+      .select('*')
+      .single()
+    fallar(error)
+    return filaAEmprendimiento(data)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return r.valor
+  }
+
   db.emprendimientos.unshift(nuevo)
   escribir(db)
   notificar()
@@ -543,6 +785,16 @@ export const moderarEmprendimiento = async (
   if (!e) return demora(undefined)
   e.status = accion === 'aprobar' ? 'aprobado' : 'rechazado'
   e.moderacion = { revisadoPor: opciones.revisadoPor, revisadoEn: new Date().toISOString(), motivo: opciones.motivo }
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb.from(TABLAS.emprendimientos).update({ status: e.status }).eq('id', empId)
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return e
+  }
+
   escribir(db)
   notificar()
   return demora(e, 200)
@@ -570,6 +822,23 @@ export const solicitarPlan = async (datos: {
     creadoEn: new Date().toISOString(),
     status: 'pendiente',
   }
+  const r = await remoto(async (sb) => {
+    const { data: sesion } = await sb.auth.getUser()
+    const { error } = await sb.from(TABLAS.solicitudes).insert({
+      emprendimiento_id: datos.emprendimientoId,
+      plan: datos.plan,
+      solicitante_id: sesion.user?.id ?? null,
+      solicitante: datos.solicitante,
+      correo: datos.correo,
+      meses: datos.meses,
+    })
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return solicitud
+  }
+
   db.solicitudes.unshift(solicitud)
   const emp = db.emprendimientos.find((e) => e.id === datos.emprendimientoId)
   if (emp) emp.suscripcionStatus = 'pendiente-pago'
@@ -594,6 +863,24 @@ export const resolverSolicitud = async (solicitudId: string, accion: 'confirmar'
     emp.suscripcionStatus = 'activa'
     if (emp.status === 'pendiente') emp.status = 'aprobado'
   }
+  const res = await remoto(async (sb) => {
+    const { error } = await sb
+      .from(TABLAS.solicitudes)
+      .update({ status: s.status, nota: nota ?? null })
+      .eq('id', solicitudId)
+    fallar(error)
+    if (emp && accion === 'confirmar') {
+      await sb
+        .from(TABLAS.emprendimientos)
+        .update({ plan: emp.plan, suscripcion_hasta: emp.suscripcionHasta, status: emp.status })
+        .eq('id', emp.id)
+    }
+  })
+  if (res.remoto) {
+    await sincronizar()
+    return s
+  }
+
   escribir(db)
   notificar()
   return demora(s, 250)
@@ -667,6 +954,30 @@ export const postularFeria = async (borrador: BorradorPostulacion): Promise<Resu
     return demora({ ok: false, motivo: 'Se acaba de llenar el cupo.' } as const)
   }
 
+  // Con backend manda la base: los triggers rechazan una feria cerrada y
+  // cierran la convocatoria al llenarse, aunque dos personas envíen a la vez.
+  const r = await remoto(async (sb) => {
+    const { data, error } = await sb
+      .from(TABLAS.postulaciones)
+      .insert(postulacionAFila(borrador))
+      .select('*')
+      .single()
+    if (error) {
+      const msg = error.message.toLowerCase()
+      if (msg.includes('no está abierta')) return { ok: false, motivo: 'La convocatoria está cerrada.' } as const
+      if (msg.includes('duplicate') || msg.includes('unique')) {
+        return { ok: false, motivo: 'Ya hay una postulación registrada con ese RUT.' } as const
+      }
+      return { ok: false, motivo: 'No se pudo enviar la postulación. Intenta de nuevo.' } as const
+    }
+    const { data: actual } = await sb.from(TABLAS.ferias).select('estado').eq('id', borrador.feriaId).single()
+    return { ok: true, postulacion: filaAPostulacion(data), seCerro: actual?.estado === 'cerrada' } as const
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return r.valor
+  }
+
   const postulacion: PostulacionFeria = {
     ...borrador,
     id: id('pf'),
@@ -693,6 +1004,16 @@ export type BorradorFeria = Omit<Feria, 'id' | 'creadoEn' | 'cerradaEn'>
 
 export const crearFeria = async (borrador: BorradorFeria): Promise<Feria> => {
   const db = leer()
+  const r = await remoto(async (sb) => {
+    const { data, error } = await sb.from(TABLAS.ferias).insert(feriaAFila(borrador)).select('*').single()
+    fallar(error)
+    return filaAFeria(data)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return r.valor
+  }
+
   const nueva: Feria = { ...borrador, id: id('f'), creadoEn: new Date().toISOString() }
   db.ferias.unshift(nueva)
   escribir(db)
@@ -710,6 +1031,25 @@ export const actualizarFeria = async (feriaId: string, cambios: Partial<Feria>) 
     f.cerradaEn = undefined
     f.abiertaDesde = f.abiertaDesde ?? new Date().toISOString()
   }
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb
+      .from(TABLAS.ferias)
+      .update({
+        estado: f.estado,
+        cerrada_en: f.cerradaEn ?? null,
+        abierta_desde: f.abiertaDesde ?? null,
+        cupos: f.cupos,
+        puestos: f.puestos,
+      })
+      .eq('id', feriaId)
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return f
+  }
+
   escribir(db)
   notificar()
   return demora(f, 200)
@@ -724,6 +1064,16 @@ export const cambiarEstadoPostulacion = async (
   if (!p) return demora(undefined)
   p.estado = estado
   if (estado !== 'seleccionada') p.puesto = undefined
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb
+      .from(TABLAS.postulaciones)
+      .update({ estado, puesto: p.puesto ?? null })
+      .eq('id', postulacionId)
+    fallar(error)
+  })
+  if (r.remoto) return p
+
   escribir(db)
   notificar()
   return demora(p, 150)
@@ -811,6 +1161,13 @@ export const asignarPuesto = async (postulacionId: string, puesto: number | unde
   const p = db.postulaciones.find((x) => x.id === postulacionId)
   if (!p) return demora(undefined)
   p.puesto = puesto
+
+  const r = await remoto(async (sb) => {
+    const { error } = await sb.from(TABLAS.postulaciones).update({ puesto: puesto ?? null }).eq('id', postulacionId)
+    fallar(error)
+  })
+  if (r.remoto) return p
+
   escribir(db)
   notificar()
   return demora(p, 120)
@@ -827,6 +1184,20 @@ export const marcarAvisados = async (feriaId: string) => {
       cuantos++
     }
   }
+  const r = await remoto(async (sb) => {
+    const { error } = await sb
+      .from(TABLAS.postulaciones)
+      .update({ avisado_en: ahora })
+      .eq('feria_id', feriaId)
+      .eq('estado', 'seleccionada')
+      .is('avisado_en', null)
+    fallar(error)
+  })
+  if (r.remoto) {
+    await sincronizar()
+    return cuantos
+  }
+
   escribir(db)
   notificar()
   return demora(cuantos, 200)
@@ -842,6 +1213,14 @@ export const marcarControl = async (
   const p = db.postulaciones.find((x) => x.id === postulacionId)
   if (!p) return demora(undefined)
   p[campo] = valor
+
+  const columna = campo === 'pagoInscripcion' ? 'pago_inscripcion' : 'entrega_alimento'
+  const r = await remoto(async (sb) => {
+    const { error } = await sb.from(TABLAS.postulaciones).update({ [columna]: valor }).eq('id', postulacionId)
+    fallar(error)
+  })
+  if (r.remoto) return p
+
   escribir(db)
   notificar()
   return demora(p, 120)

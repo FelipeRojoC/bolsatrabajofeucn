@@ -25,7 +25,7 @@ const NAV_MOVIL: { a: string; texto: string; icono: NombreIcono }[] = [
 ]
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { usuario, cambiarUsuario, esModerador, tema, ponerTema, avisar } = useApp()
+  const { usuario, cambiarUsuario, esModerador, tema, ponerTema, avisar, conBackend } = useApp()
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [buscador, setBuscador] = useState(false)
   const navegar = useNavigate()
@@ -144,8 +144,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 )}
 
                 <hr className="separador" />
-                <div className="menu-titulo">Cambiar de cuenta (demo)</div>
-                {api.listarUsuariosDemo().slice(0, 2).map((u) => (
+                {!conBackend && <div className="menu-titulo">Cambiar de cuenta (demo)</div>}
+                {!conBackend && api.listarUsuariosDemo().slice(0, 2).map((u) => (
                   <button
                     key={u.id}
                     className="menu-item"

@@ -16,6 +16,10 @@ export interface AppCtx {
   /** Se incrementa con cada escritura en la base: fuerza el recálculo de vistas. */
   revision: number
   avisar: (mensaje: string, tipo?: TipoBrindis) => void
+  /** true mientras se trae por primera vez el estado desde la base. */
+  cargando: boolean
+  /** true cuando la aplicación está conectada a Supabase. */
+  conBackend: boolean
 }
 
 /**

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import * as api from '../lib/api'
 import { Icono } from '../components/Iconos'
-import { Nota } from '../components/UI'
 import { LogoFeucn } from '../components/Logo'
 import { useApp } from '../state/contexto'
 
@@ -60,7 +59,6 @@ export const Admin = () => {
             onChange={(e) => setUsuario(e.target.value)}
             aria-invalid={Boolean(error)}
           />
-          <span className="campo-ayuda">El correo de la cuenta que creó la federación.</span>
         </div>
 
         <div className="campo">
@@ -92,10 +90,6 @@ export const Admin = () => {
         <button className="btn btn-primario btn-grande btn-bloque" type="submit" disabled={entrando || !usuario || !clave}>
           <Icono nombre="candado" tam={17} /> {entrando ? 'Entrando…' : 'Entrar'}
         </button>
-
-        <Nota icono="info">
-          Las cuentas se crean solo desde la base de datos. Si necesitas acceso, pídeselo a la mesa directiva.
-        </Nota>
       </form>
     </div>
   )

@@ -108,7 +108,36 @@ export const linkWhatsApp = (numero: string, mensaje: string) => {
   return `https://wa.me/${conPais}?text=${encodeURIComponent(mensaje)}`
 }
 
-export const linkInstagram = (handle: string) =>
-  `https://instagram.com/${handle.replace(/^@/, '').trim()}`
+/**
+ * Deja pasar solo enlaces http/https.
+ *
+ * El sitio web de un emprendimiento lo escribe una persona. Sin este filtro,
+ * un `javascript:...` guardado en ese campo se ejecuta al pulsar el enlace, con
+ * la sesión de quien lo pulsa. Vale para cualquier URL que venga de la base.
+ */
+export const urlSegura = (url?: string): string | undefined => {
+  if (!url) return undefined
+  const limpia = url.trim()
+  if (!limpia) return undefined
+  try {
+    // Sin esquema se asume https: así "miemprendimiento.cl" sigue funcionando.
+    const parsed = new URL(/^[a-z][a-z0-9+.-]*:/i.test(limpia) ? limpia : `https://${limpia}`)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : undefined
+  } catch {
+    return undefined
+  }
+}
 
-export const handleInstagram = (handle: string) => `@${handle.replace(/^@/, '').trim()}`
+/** Handle de red social: solo letras, números, punto y guion bajo. */
+export const handleSeguro = (handle?: string): string | undefined => {
+  if (!handle) return undefined
+  const limpio = handle.replace(/^@/, '').trim()
+  return /^[A-Za-z0-9._]{1,30}$/.test(limpio) ? limpio : undefined
+}
+
+export const linkInstagram = (handle: string) => {
+  const limpio = handleSeguro(handle)
+  return limpio ? `https://instagram.com/${limpio}` : undefined
+}
+
+export const handleInstagram = (handle: string) => `@${handleSeguro(handle) ?? handle.slice(0, 30)}`
