@@ -37,14 +37,6 @@ const puntoCerca = (tipo: TipoLugar, r: () => number) => {
 
 export const USUARIOS: User[] = [
   {
-    id: 'u-admin',
-    nombre: 'Administración FEUCN',
-    correo: 'admin@feucn.cl',
-    carrera: 'Federación de Estudiantes',
-    role: 'admin',
-    avatar: '#4a3aa7',
-  },
-  {
     id: 'u-demo',
     nombre: 'Javiera Rojas',
     correo: 'javiera.rojas@alumnos.ucn.cl',
@@ -759,7 +751,7 @@ export const crearBaseDemo = (): Database => {
   const { ferias, postulaciones } = construirFerias()
   const emprendimientos = construirEmprendimientos(r)
   return {
-    version: 7,
+    version: 8,
     posts,
     emprendimientos,
     eventos: construirEventos(posts, emprendimientos, r),

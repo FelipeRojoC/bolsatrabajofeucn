@@ -14,7 +14,6 @@
 import { MAX_DIAS_VIGENCIA, MAX_RENOVACIONES, TERMINOS_RIESGO } from './constants'
 import { normalizar } from './format'
 import { limpiarRut } from './rut'
-import { credencialesValidas } from './auth'
 import { TABLAS, hayBackend, supabase } from './supabase'
 import { crearBaseDemo } from './seed'
 import type {
@@ -46,7 +45,7 @@ const leer = (): Database => {
     const crudo = localStorage.getItem(CLAVE)
     if (crudo) {
       const parsed = JSON.parse(crudo) as Database
-      if (parsed.version === 7) {
+      if (parsed.version === 8) {
         cache = parsed
         return cache
       }
@@ -165,77 +164,68 @@ export const iniciarSesion = async (userId: string | null) => {
 
 export const listarUsuarios = () => leer().usuarios
 
-/** Usuarios que se ofrecen en el menú de demostración (el admin entra por clave). */
-export const listarUsuariosDemo = () => leer().usuarios.filter((u) => u.role !== 'admin')
+/**
+ * Cuentas del menú de demostración. Solo estudiantes: al panel se entra por
+ * /admin con una cuenta real de Supabase, nunca cambiando de usuario acá.
+ */
+export const listarUsuariosDemo = () => leer().usuarios.filter((u) => u.role === 'estudiante')
 
 export type ResultadoIngreso = { ok: true; user: User } | { ok: false; motivo: string }
 
 /**
  * Ingreso al panel.
  *
- * Con Supabase configurado manda Supabase Auth y las cuentas existen solo allá,
- * creadas desde su panel. Sin backend cae a la credencial local de `auth.ts`,
- * que es la que permite trabajar mientras tanto.
- *
- * El orden importa: una vez que hay base de datos real, la puerta local deja de
- * usarse aunque el código siga ahí.
+ * Las cuentas existen solo en Supabase y las crea la federación desde su panel:
+ * el frontend no puede crear ninguna. Acá hubo una credencial de desarrollo
+ * escrita en el código; se eliminó al conectar la base, porque el repositorio
+ * es público y el panel muestra el RUT y el correo de quienes postulan a las
+ * ferias.
  */
 export const iniciarSesionAdmin = async (
   usuario: string,
   clave: string,
 ): Promise<ResultadoIngreso> => {
-  if (hayBackend()) {
-    const sb = await supabase()
-    if (sb) {
-      // Supabase Auth trabaja con correo; si escribieron solo el usuario, se completa.
-      const correo = usuario.includes('@') ? usuario.trim() : `${usuario.trim()}@feucn.cl`
-      const { data, error } = await sb.auth.signInWithPassword({ email: correo, password: clave })
-      if (error || !data.user) {
-        return { ok: false, motivo: 'Usuario o clave incorrectos.' }
-      }
-
-      const { data: perfil } = await sb
-        .from(TABLAS.perfiles)
-        .select('nombre, correo, carrera, rol, avatar')
-        .eq('id', data.user.id)
-        .single()
-
-      if (!perfil || !['admin', 'moderador'].includes(perfil.rol)) {
-        await sb.auth.signOut()
-        return { ok: false, motivo: 'Esa cuenta no tiene acceso al panel.' }
-      }
-
-      const user: User = {
-        id: data.user.id,
-        nombre: perfil.nombre,
-        correo: perfil.correo,
-        carrera: perfil.carrera ?? 'Federación de Estudiantes',
-        role: perfil.rol as User['role'],
-        avatar: perfil.avatar ?? '#4a3aa7',
-      }
-
-      // La sesión de la app espejea la de Supabase para que el resto siga igual.
-      const db = leer()
-      const existente = db.usuarios.find((u) => u.id === user.id)
-      if (existente) Object.assign(existente, user)
-      else db.usuarios.unshift(user)
-      db.sesionUserId = user.id
-      escribir(db)
-      notificar()
-      return { ok: true, user }
-    }
+  const sb = await supabase()
+  if (!sb) {
+    return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
   }
 
-  if (!credencialesValidas(usuario, clave)) {
-    return demora({ ok: false, motivo: 'Usuario o clave incorrectos.' } as const, 500)
+  // Supabase Auth trabaja con correo; si escribieron solo el usuario, se completa.
+  const correo = usuario.includes('@') ? usuario.trim() : `${usuario.trim()}@feucn.cl`
+  const { data, error } = await sb.auth.signInWithPassword({ email: correo, password: clave })
+  if (error || !data.user) {
+    return { ok: false, motivo: 'Usuario o clave incorrectos.' }
   }
+
+  const { data: perfil } = await sb
+    .from(TABLAS.perfiles)
+    .select('nombre, correo, carrera, rol, avatar')
+    .eq('id', data.user.id)
+    .single()
+
+  if (!perfil || !['admin', 'moderador'].includes(perfil.rol)) {
+    await sb.auth.signOut()
+    return { ok: false, motivo: 'Esa cuenta no tiene acceso al panel.' }
+  }
+
+  const user: User = {
+    id: data.user.id,
+    nombre: perfil.nombre,
+    correo: perfil.correo,
+    carrera: perfil.carrera ?? 'Federación de Estudiantes',
+    role: perfil.rol as User['role'],
+    avatar: perfil.avatar ?? '#4a3aa7',
+  }
+
+  // La sesión de la app espejea la de Supabase para que el resto siga igual.
   const db = leer()
-  const admin = db.usuarios.find((u) => u.role === 'admin')
-  if (!admin) return demora({ ok: false, motivo: 'No hay cuenta de administración configurada.' } as const)
-  db.sesionUserId = admin.id
+  const existente = db.usuarios.find((u) => u.id === user.id)
+  if (existente) Object.assign(existente, user)
+  else db.usuarios.unshift(user)
+  db.sesionUserId = user.id
   escribir(db)
   notificar()
-  return demora({ ok: true, user: admin } as const, 300)
+  return { ok: true, user }
 }
 
 // ── Avisos ──────────────────────────────────────────────────────────────────

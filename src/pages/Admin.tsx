@@ -4,7 +4,6 @@ import * as api from '../lib/api'
 import { Icono } from '../components/Iconos'
 import { Nota } from '../components/UI'
 import { LogoFeucn } from '../components/Logo'
-import { hayBackend } from '../lib/supabase'
 import { useApp } from '../state/contexto'
 
 /**
@@ -61,7 +60,7 @@ export const Admin = () => {
             onChange={(e) => setUsuario(e.target.value)}
             aria-invalid={Boolean(error)}
           />
-          {hayBackend() && <span className="campo-ayuda">La cuenta que creó la federación en Supabase.</span>}
+          <span className="campo-ayuda">El correo de la cuenta que creó la federación.</span>
         </div>
 
         <div className="campo">
@@ -95,7 +94,7 @@ export const Admin = () => {
         </button>
 
         <Nota icono="info">
-          Las cuentas se crean solo desde el backend. Si necesitas acceso, pídeselo a la mesa directiva.
+          Las cuentas se crean solo desde la base de datos. Si necesitas acceso, pídeselo a la mesa directiva.
         </Nota>
       </form>
     </div>

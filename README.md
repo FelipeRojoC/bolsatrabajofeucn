@@ -84,17 +84,20 @@ de la federación y ahí se marcan en la lista.
 
 ## Acceso del equipo
 
-El panel vive en `/moderacion` y se entra por `/admin` con usuario y contraseña.
-Desde ahí se aprueban y rechazan publicaciones, se ven los reportes, se
-gestionan las altas del directorio, las suscripciones y las ferias.
+El panel vive en `/moderacion` y se entra por `/admin` con el **correo y la
+contraseña de una cuenta de Supabase** cuyo perfil tenga rol `admin` o
+`moderador`. Desde ahí se aprueban y rechazan publicaciones, se ven los
+reportes, y se gestionan las altas del directorio, las suscripciones y las
+ferias.
 
-> **La contraseña de desarrollo está escrita en `src/lib/auth.ts` y este
-> repositorio es público.** Cualquiera que lea el código puede entrar al panel.
-> Es una medida temporal pedida a propósito para poder trabajar sin backend.
->
-> **Antes de publicar el sitio hay que borrar `ADMIN_LOCAL` de `auth.ts`** y
-> dejar solo Supabase Auth, donde las cuentas se crean únicamente desde el panel
-> de Supabase.
+Las cuentas se crean **solo** desde Supabase (Authentication → Users). El
+frontend no puede crear ninguna, y el menú de "cambiar de cuenta" ofrece
+únicamente perfiles de estudiante: al panel no se entra por ahí.
+
+> Durante el desarrollo hubo una credencial escrita en `src/lib/auth.ts`. Se
+> eliminó al conectar la base de datos. **Sigue estando en el historial de git**
+> (commits `3efa868`, `2639dd5` y `00d331f`), así que esa contraseña no debe
+> volver a usarse en ninguna cuenta.
 
 ---
 
