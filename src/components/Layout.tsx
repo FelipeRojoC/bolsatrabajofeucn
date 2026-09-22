@@ -79,7 +79,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               </NavLink>
             ))}
             {esModerador && (
-              <NavLink to="/moderacion" className={({ isActive }) => `nav-enlace${isActive ? ' activo' : ''}`}>
+              <NavLink to="/adminfeucn" className={({ isActive }) => `nav-enlace${isActive ? ' activo' : ''}`}>
                 Panel
                 {enCola + reportesAbiertos > 0 && <span className="pestana-cuenta">{enCola + reportesAbiertos}</span>}
               </NavLink>
@@ -133,7 +133,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                       <Icono nombre="mas" tam={17} /> Publicar un aviso
                     </button>
                     {esModerador && (
-                      <button className="menu-item" onClick={() => { navegar('/moderacion'); setMenuAbierto(false) }}>
+                      <button className="menu-item" onClick={() => { navegar('/adminfeucn'); setMenuAbierto(false) }}>
                         <Icono nombre="escudo" tam={17} /> Panel de administración
                       </button>
                     )}
@@ -168,11 +168,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     {usuario?.id === u.id && <Icono nombre="visto" tam={16} />}
                   </button>
                 ))}
-                {!esModerador && (
-                  <button className="menu-item" onClick={() => { navegar('/admin'); setMenuAbierto(false) }}>
-                    <Icono nombre="escudo" tam={17} /> Entrar al panel de la FEUCN
-                  </button>
-                )}
                 {usuario && (
                   <button className="menu-item" onClick={() => { cambiarUsuario(null); setMenuAbierto(false); avisar('Cerraste sesión', 'ok') }}>
                     <Icono nombre="candado" tam={17} /> Cerrar sesión

@@ -506,11 +506,14 @@ export const cambiarClaveConCodigo = async (
   return { ok: true, user }
 }
 
+/** Para que la interfaz pueda avisar cuando falta configurar la base. */
+export const hayBackendConfigurado = () => hayBackend()
+
 export const listarUsuarios = () => leer().usuarios
 
 /**
  * Cuentas del menú de demostración. Solo estudiantes: al panel se entra por
- * /admin con una cuenta real de Supabase, nunca cambiando de usuario acá.
+ * /adminfeucn con una cuenta real de Supabase, nunca cambiando de usuario acá.
  */
 export const listarUsuariosDemo = () => leer().usuarios.filter((u) => u.role === 'estudiante')
 

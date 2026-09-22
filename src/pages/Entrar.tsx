@@ -129,7 +129,7 @@ export const Entrar = () => {
           return setErrores({ general: r.motivo })
         }
         avisar(`Hola de nuevo, ${r.user.nombre.split(' ')[0]}`, 'ok')
-        return navegar(r.user.role === 'estudiante' ? volverA : '/moderacion')
+        return navegar(r.user.role === 'estudiante' ? volverA : '/adminfeucn')
       }
 
       /* Confirmar la cuenta con el código ----------------------------- */

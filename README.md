@@ -31,8 +31,7 @@ npm run build    # bundle de producción en dist/
 | Estadísticas | `/estadisticas` | Panel público de uso de la plataforma |
 | La FEUCN | `/feucn` | Quiénes son, reglamento de la bolsa, contacto y oficina |
 | Entrar | `/entrar` | Registro e ingreso de estudiantes con correo UCN |
-| Ingreso | `/admin` | Acceso del equipo con usuario y contraseña |
-| Panel | `/moderacion` | Cola por riesgo, reportes, altas, suscripciones y ferias |
+| Panel | `/adminfeucn` | Ingreso y panel del equipo. No se enlaza desde ninguna parte |
 
 ### Las reglas que definen el producto
 
@@ -109,11 +108,21 @@ los seis dígitos.
 
 ## Acceso del equipo
 
-El panel vive en `/moderacion` y se entra por `/admin` con el **correo y la
-contraseña de una cuenta de Supabase** cuyo perfil tenga rol `admin` o
-`moderador`. Desde ahí se aprueban y rechazan publicaciones, se ven los
-reportes, y se gestionan las altas del directorio, las suscripciones y las
-ferias.
+El panel vive en **`/adminfeucn`** y se llega escribiendo esa dirección: no hay
+botón ni enlace hacia él en ninguna parte del sitio. La misma dirección muestra
+el formulario de ingreso si no hay sesión, y el panel si la hay, así que no
+existe una ruta de ingreso aparte que delate dónde está.
+
+Se entra con el **correo y la contraseña de una cuenta de Supabase** cuyo perfil
+tenga rol `admin` o `moderador`. Desde ahí se aprueban y rechazan publicaciones,
+se ven los reportes, y se gestionan las altas del directorio, las suscripciones
+y las ferias.
+
+> Esconder la dirección no es una medida de seguridad: una URL se adivina. Lo
+> que protege el panel es la contraseña, la comprobación del rol contra la tabla
+> `perfiles` y las políticas RLS, que bloquean los datos aunque alguien llegue a
+> la pantalla. Ocultarlo solo lo mantiene fuera de la vista de quien no tiene
+> nada que hacer ahí.
 
 Las cuentas se crean **solo** desde Supabase (Authentication → Users). El
 frontend no puede crear ninguna, y el menú de "cambiar de cuenta" ofrece
@@ -351,6 +360,6 @@ ver la prioridad de mesas— y un mes de eventos para que las series tengan
 historia. Los RUT de demostración tienen dígito verificador válido.
 
 Para cambiar de cuenta de estudiante se usa el menú del avatar; al panel se
-entra por `/admin`. El panel exporta toda la base como JSON. Si se cambia el modelo de
+entra por `/adminfeucn`. El panel exporta toda la base como JSON. Si se cambia el modelo de
 datos hay que subir `version` en `seed.ts` y en la comprobación de `api.ts`:
 eso descarta el `localStorage` viejo.

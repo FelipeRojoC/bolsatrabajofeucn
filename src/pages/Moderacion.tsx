@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import * as api from '../lib/api'
 import { MOTIVOS_RECHAZO, PLANES, TIPOS } from '../lib/constants'
 import { fechaHora, formatearNumero, formatearPrecio, hace, porcentaje } from '../lib/format'
@@ -10,6 +9,7 @@ import { Avatar, Modal, Nota, Vacio } from '../components/UI'
 import { Cifra, GraficoLineas, Medidor } from '../components/Graficos'
 import { DetalleAviso } from '../components/DetalleAviso'
 import { PanelFerias } from '../components/PanelFerias'
+import { IngresoPanel } from '../components/IngresoPanel'
 import { useApp } from '../state/contexto'
 
 type Pestana = 'cola' | 'reportes' | 'emprendimientos' | 'suscripciones' | 'ferias' | 'actividad'
@@ -44,22 +44,9 @@ export const Moderacion = () => {
     }
   }, [revision])
 
-  if (!esModerador) {
-    return (
-      <div className="contenedor seccion">
-        <div className="panel panel-relleno centro" style={{ padding: 44, maxWidth: 540, margin: '0 auto' }}>
-          <Icono nombre="escudo" tam={30} className="tenue" style={{ margin: '0 auto 14px' }} />
-          <h2>Panel de administración</h2>
-          <p className="tenue" style={{ margin: '10px 0 20px' }}>
-            Esta sección es solo para el equipo de la federación. Ingresa con tu usuario y contraseña.
-          </p>
-          <Link className="btn btn-primario" to="/admin">
-            <Icono nombre="candado" tam={17} /> Ir al ingreso
-          </Link>
-        </div>
-      </div>
-    )
-  }
+  // Sin sesión de equipo, esta misma dirección muestra el formulario: no hay
+  // una ruta de ingreso aparte que delate dónde está el panel.
+  if (!esModerador) return <IngresoPanel />
 
   const aprobar = async (p: Post) => {
     await api.moderarPost(p.id, 'aprobar', { revisadoPor: usuario!.nombre })

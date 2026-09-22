@@ -1,24 +1,26 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
 import * as api from '../lib/api'
-import { Icono } from '../components/Iconos'
-import { LogoFeucn } from '../components/Logo'
+import { Icono } from './Iconos'
+import { Nota } from './UI'
+import { LogoFeucn } from './Logo'
 import { useApp } from '../state/contexto'
 
 /**
- * Ingreso al panel. Las cuentas no se crean desde acá a propósito: las da de
- * alta la federación en el backend.
+ * Formulario de ingreso al panel.
+ *
+ * No tiene ruta propia ni enlaces desde ningún menú: aparece cuando alguien
+ * escribe /adminfeucn a mano. Eso no es una medida de seguridad —una dirección
+ * se adivina— pero mantiene el panel fuera de la vista de quien no tiene nada
+ * que hacer ahí. Lo que protege de verdad es la contraseña y las políticas de
+ * la base.
  */
-export const Admin = () => {
-  const { esModerador, avisar } = useApp()
-  const navegar = useNavigate()
+export const IngresoPanel = () => {
+  const { avisar } = useApp()
   const [usuario, setUsuario] = useState('')
   const [clave, setClave] = useState('')
   const [verClave, setVerClave] = useState(false)
   const [error, setError] = useState('')
   const [entrando, setEntrando] = useState(false)
-
-  if (esModerador) return <Navigate to="/moderacion" replace />
 
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,12 +28,8 @@ export const Admin = () => {
     setError('')
     try {
       const r = await api.iniciarSesionAdmin(usuario, clave)
-      if (r.ok) {
-        avisar(`Entraste como ${r.user.nombre}`, 'ok')
-        navegar('/moderacion')
-      } else {
-        setError(r.motivo)
-      }
+      if (r.ok) avisar(`Entraste como ${r.user.nombre}`, 'ok')
+      else setError(r.motivo)
     } finally {
       setEntrando(false)
     }
@@ -90,6 +88,12 @@ export const Admin = () => {
         <button className="btn btn-primario btn-grande btn-bloque" type="submit" disabled={entrando || !usuario || !clave}>
           <Icono nombre="candado" tam={17} /> {entrando ? 'Entrando…' : 'Entrar'}
         </button>
+
+        {!api.hayBackendConfigurado() && (
+          <Nota tono="aviso" icono="alerta">
+            Falta configurar la conexión con la base de datos, así que el ingreso no va a funcionar.
+          </Nota>
+        )}
       </form>
     </div>
   )

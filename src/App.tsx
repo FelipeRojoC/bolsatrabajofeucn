@@ -19,7 +19,6 @@ const Estadisticas = lazy(() => import('./pages/Estadisticas').then((m) => ({ de
 const Feucn = lazy(() => import('./pages/Feucn').then((m) => ({ default: m.Feucn })))
 const Moderacion = lazy(() => import('./pages/Moderacion').then((m) => ({ default: m.Moderacion })))
 const Feria = lazy(() => import('./pages/Feria').then((m) => ({ default: m.Feria })))
-const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })))
 const Entrar = lazy(() => import('./pages/Entrar').then((m) => ({ default: m.Entrar })))
 
 /** Cambiar de página vuelve arriba; sin esto se aterriza a media página. */
@@ -56,8 +55,9 @@ export default function App() {
           <Route path="/estadisticas" element={<Estadisticas />} />
           <Route path="/feucn" element={<Feucn />} />
           <Route path="/feria" element={<Feria />} />
-          <Route path="/moderacion" element={<Moderacion />} />
-          <Route path="/admin" element={<Admin />} />
+          {/* El panel no se enlaza desde ninguna parte: se llega escribiendo
+              la dirección. Si no hay sesión de equipo, muestra el ingreso. */}
+          <Route path="/adminfeucn" element={<Moderacion />} />
           <Route path="/entrar" element={<Entrar />} />
           <Route
             path="*"
