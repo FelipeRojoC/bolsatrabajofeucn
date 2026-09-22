@@ -767,3 +767,14 @@
 .pie-enlaces a { color: var(--tinta-2); font-size: 0.87rem; }
 .pie-enlaces a:hover { color: var(--tinta); }
 .pie-legal { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--borde); font-size: 0.79rem; color: var(--tinta-3); display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+/* Código de un solo uso: dígitos grandes y separados, para leerlos del correo */
+.entrada-codigo {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.45em;
+  text-align: center;
+  padding-left: 0.45em;
+  font-variant-numeric: tabular-nums;
+}
+.entrada-codigo::placeholder { letter-spacing: 0.45em; font-weight: 400; }

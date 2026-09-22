@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import * as api from '../lib/api'
 import { CONSEJOS_SEGURIDAD, MOTIVOS_REPORTE, TIPOS } from '../lib/constants'
 import {
@@ -221,7 +222,9 @@ export const DetalleAviso = ({ post, alCerrar }: Props) => {
                     </div>
                   </div>
                 ) : (
-                  <Nota icono="info">Inicia sesión con tu correo UCN para responder en el hilo.</Nota>
+                  <Nota icono="info">
+                    <Link to="/entrar">Inicia sesión con tu correo UCN</Link> para responder en el hilo.
+                  </Nota>
                 )}
 
                 {esAutor && !post.resuelto && (

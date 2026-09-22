@@ -251,6 +251,261 @@ export const iniciarSesion = async (userId: string | null) => {
   return demora(obtenerSesion(), 80)
 }
 
+/** Dominios de correo que la federación acepta. Se valida igual en la base. */
+export const DOMINIOS_UCN = ['alumnos.ucn.cl', 'ce.ucn.cl', 'ucn.cl', 'feucn.cl']
+
+export const correoInstitucional = (correo: string) =>
+  DOMINIOS_UCN.some((d) => correo.trim().toLowerCase().endsWith(`@${d}`))
+
+const perfilAUsuario = (id: string, perfil: Record<string, unknown>): User => ({
+  id,
+  nombre: String(perfil.nombre ?? 'Estudiante UCN'),
+  correo: String(perfil.correo ?? ''),
+  carrera: String(perfil.carrera ?? 'Comunidad UCN'),
+  role: (perfil.rol as User['role']) ?? 'estudiante',
+  avatar: String(perfil.avatar ?? '#0b7a54'),
+})
+
+/** Guarda el usuario en la caché y lo deja como sesión activa. */
+const activarSesion = (user: User) => {
+  const db = leer()
+  const existente = db.usuarios.find((u) => u.id === user.id)
+  if (existente) Object.assign(existente, user)
+  else db.usuarios.unshift(user)
+  db.sesionUserId = user.id
+  escribir(db)
+  notificar()
+}
+
+const traerPerfil = async (sb: SupabaseClient, userId: string): Promise<User | null> => {
+  const { data } = await sb
+    .from(TABLAS.perfiles)
+    .select('nombre, correo, carrera, rol, avatar')
+    .eq('id', userId)
+    .single()
+  return data ? perfilAUsuario(userId, data) : null
+}
+
+export interface DatosRegistro {
+  nombre: string
+  correo: string
+  carrera: string
+  clave: string
+}
+
+export type ResultadoRegistro =
+  | { ok: true; necesitaConfirmar: boolean; user?: User }
+  | { ok: false; motivo: string }
+
+/**
+ * Crea la cuenta de un estudiante.
+ *
+ * El dominio se comprueba acá para dar un mensaje claro, pero quien mande la
+ * petición a mano se topa igual con el trigger de la base: esta comprobación
+ * es comodidad, no seguridad.
+ */
+export const registrarEstudiante = async (datos: DatosRegistro): Promise<ResultadoRegistro> => {
+  const correo = datos.correo.trim().toLowerCase()
+  if (!correoInstitucional(correo)) {
+    return { ok: false, motivo: `Usa tu correo UCN (${DOMINIOS_UCN.map((d) => `@${d}`).join(', ')}).` }
+  }
+  if (datos.clave.length < 8) {
+    return { ok: false, motivo: 'La contraseña necesita al menos 8 caracteres.' }
+  }
+
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+
+  const { data, error } = await sb.auth.signUp({
+    email: correo,
+    password: datos.clave,
+    options: { data: { nombre: datos.nombre.trim(), carrera: datos.carrera } },
+  })
+
+  if (error) {
+    const msg = error.message.toLowerCase()
+    if (msg.includes('already registered') || msg.includes('already been registered')) {
+      return { ok: false, motivo: 'Ya existe una cuenta con ese correo. Inicia sesión.' }
+    }
+    if (msg.includes('institucional')) {
+      return { ok: false, motivo: 'Solo se puede crear una cuenta con un correo institucional UCN.' }
+    }
+    if (msg.includes('weak') || msg.includes('password')) {
+      return { ok: false, motivo: 'Esa contraseña es muy débil. Prueba con una más larga.' }
+    }
+    return { ok: false, motivo: 'No se pudo crear la cuenta. Intenta de nuevo.' }
+  }
+
+  // Sin sesión de vuelta, el proyecto pide confirmar el correo antes de entrar.
+  if (!data.session || !data.user) return { ok: true, necesitaConfirmar: true }
+
+  const user = (await traerPerfil(sb, data.user.id)) ?? {
+    id: data.user.id,
+    nombre: datos.nombre.trim(),
+    correo,
+    carrera: datos.carrera,
+    role: 'estudiante' as const,
+    avatar: '#0b7a54',
+  }
+  activarSesion(user)
+  await sincronizar()
+  return { ok: true, necesitaConfirmar: false, user }
+}
+
+/** Ingreso de un estudiante con su correo institucional. */
+export const iniciarSesionEstudiante = async (
+  correo: string,
+  clave: string,
+): Promise<ResultadoIngreso> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: correo.trim().toLowerCase(),
+    password: clave,
+  })
+
+  if (error || !data.user) {
+    const msg = (error?.message ?? '').toLowerCase()
+    if (msg.includes('not confirmed')) {
+      return { ok: false, motivo: 'Todavía no confirmas tu correo. Revisa la bandeja de entrada.' }
+    }
+    return { ok: false, motivo: 'Correo o contraseña incorrectos.' }
+  }
+
+  const user = await traerPerfil(sb, data.user.id)
+  if (!user) return { ok: false, motivo: 'Tu cuenta existe pero le falta el perfil. Avisa a la federación.' }
+
+  activarSesion(user)
+  await sincronizar()
+  return { ok: true, user }
+}
+
+/**
+ * Recupera la sesión de Supabase al abrir la aplicación.
+ *
+ * Supabase guarda el token y lo renueva solo; sin esto, recargar la página te
+ * dejaba fuera aunque la sesión siguiera viva.
+ */
+export const restaurarSesion = async (): Promise<User | null> => {
+  const sb = await supabase()
+  if (!sb) return null
+  const { data } = await sb.auth.getSession()
+  if (!data.session?.user) return null
+  const user = await traerPerfil(sb, data.session.user.id)
+  if (user) activarSesion(user)
+  return user
+}
+
+/* ── Códigos de un solo uso ──────────────────────────────────────────────
+   Supabase manda el código en el correo si la plantilla usa {{ .Token }} en
+   vez del enlace. Están en supabase/plantillas-correo.md.                   */
+
+export type ResultadoSimple = { ok: true } | { ok: false; motivo: string }
+
+const mensajeCodigo = (error: { message: string }): string => {
+  const msg = error.message.toLowerCase()
+  if (msg.includes('expired')) return 'Ese código venció. Pide uno nuevo.'
+  if (msg.includes('invalid') || msg.includes('token')) return 'El código no es correcto. Revísalo.'
+  if (msg.includes('rate') || msg.includes('many')) return 'Demasiados intentos seguidos. Espera un minuto.'
+  return 'No se pudo verificar el código.'
+}
+
+/** Confirma la cuenta recién creada con el código que llegó al correo. */
+export const confirmarCuenta = async (correo: string, codigo: string): Promise<ResultadoIngreso> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+
+  const { data, error } = await sb.auth.verifyOtp({
+    email: correo.trim().toLowerCase(),
+    token: codigo.trim(),
+    type: 'signup',
+  })
+  if (error || !data.user) return { ok: false, motivo: error ? mensajeCodigo(error) : 'No se pudo confirmar.' }
+
+  const user = await traerPerfil(sb, data.user.id)
+  if (!user) return { ok: false, motivo: 'La cuenta quedó sin perfil. Avisa a la federación.' }
+
+  activarSesion(user)
+  await sincronizar()
+  return { ok: true, user }
+}
+
+/** Vuelve a mandar el código de confirmación. */
+export const reenviarCodigoCuenta = async (correo: string): Promise<ResultadoSimple> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+  const { error } = await sb.auth.resend({ type: 'signup', email: correo.trim().toLowerCase() })
+  if (!error) return { ok: true }
+  return {
+    ok: false,
+    motivo: error.message.toLowerCase().includes('rate')
+      ? 'Espera un momento antes de pedir otro código.'
+      : 'No se pudo reenviar el código.',
+  }
+}
+
+/** Paso 1 de recuperar la contraseña: manda el código al correo. */
+export const pedirCodigoRecuperacion = async (correo: string): Promise<ResultadoSimple> => {
+  const limpio = correo.trim().toLowerCase()
+  if (!correoInstitucional(limpio)) return { ok: false, motivo: 'Escribe tu correo institucional UCN.' }
+
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+
+  const { error } = await sb.auth.resetPasswordForEmail(limpio)
+  if (!error) return { ok: true }
+  return {
+    ok: false,
+    motivo: error.message.toLowerCase().includes('rate')
+      ? 'Espera un momento antes de pedir otro código.'
+      : 'No se pudo enviar el correo.',
+  }
+}
+
+/**
+ * Paso 2: valida el código y deja la contraseña nueva.
+ *
+ * `verifyOtp` con tipo recovery abre una sesión corta; esa sesión es la que
+ * autoriza el cambio. Si el cambio falla, se cierra para no dejar a nadie
+ * dentro con un código que ya se gastó.
+ */
+export const cambiarClaveConCodigo = async (
+  correo: string,
+  codigo: string,
+  claveNueva: string,
+): Promise<ResultadoIngreso> => {
+  if (claveNueva.length < 8) return { ok: false, motivo: 'La contraseña necesita al menos 8 caracteres.' }
+
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+
+  const { data, error } = await sb.auth.verifyOtp({
+    email: correo.trim().toLowerCase(),
+    token: codigo.trim(),
+    type: 'recovery',
+  })
+  if (error || !data.user) return { ok: false, motivo: error ? mensajeCodigo(error) : 'No se pudo verificar.' }
+
+  const { error: errorClave } = await sb.auth.updateUser({ password: claveNueva })
+  if (errorClave) {
+    await sb.auth.signOut()
+    return {
+      ok: false,
+      motivo: errorClave.message.toLowerCase().includes('different')
+        ? 'La contraseña nueva tiene que ser distinta de la anterior.'
+        : 'No se pudo guardar la contraseña nueva.',
+    }
+  }
+
+  const user = await traerPerfil(sb, data.user.id)
+  if (!user) return { ok: false, motivo: 'La cuenta quedó sin perfil. Avisa a la federación.' }
+
+  activarSesion(user)
+  await sincronizar()
+  return { ok: true, user }
+}
+
 export const listarUsuarios = () => leer().usuarios
 
 /**
@@ -286,34 +541,14 @@ export const iniciarSesionAdmin = async (
     return { ok: false, motivo: 'Usuario o clave incorrectos.' }
   }
 
-  const { data: perfil } = await sb
-    .from(TABLAS.perfiles)
-    .select('nombre, correo, carrera, rol, avatar')
-    .eq('id', data.user.id)
-    .single()
-
-  if (!perfil || !['admin', 'moderador'].includes(perfil.rol)) {
+  const user = await traerPerfil(sb, data.user.id)
+  if (!user || !['admin', 'moderador'].includes(user.role)) {
     await sb.auth.signOut()
     return { ok: false, motivo: 'Esa cuenta no tiene acceso al panel.' }
   }
 
-  const user: User = {
-    id: data.user.id,
-    nombre: perfil.nombre,
-    correo: perfil.correo,
-    carrera: perfil.carrera ?? 'Federación de Estudiantes',
-    role: perfil.rol as User['role'],
-    avatar: perfil.avatar ?? '#4a3aa7',
-  }
-
-  // La sesión de la app espejea la de Supabase para que el resto siga igual.
-  const db = leer()
-  const existente = db.usuarios.find((u) => u.id === user.id)
-  if (existente) Object.assign(existente, user)
-  else db.usuarios.unshift(user)
-  db.sesionUserId = user.id
-  escribir(db)
-  notificar()
+  activarSesion(user)
+  await sincronizar()
   return { ok: true, user }
 }
 

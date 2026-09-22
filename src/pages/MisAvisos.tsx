@@ -78,7 +78,15 @@ export const MisAvisos = () => {
         <Vacio
           icono="candado"
           titulo="Entra para ver tus avisos"
-          texto="Usa el menú de arriba a la derecha para entrar con una cuenta de demostración."
+          texto="Acá aparecen los avisos que publicaste, cuánta gente los miró y cuántos pidieron tu contacto."
+          accion={
+            <div className="fila" style={{ justifyContent: 'center', gap: 8 }}>
+              <button className="btn btn-primario" onClick={() => navegar('/entrar?volver=/mis-avisos')}>
+                <Icono nombre="candado" tam={16} /> Iniciar sesión
+              </button>
+              <button className="btn" onClick={() => navegar('/entrar?crear=1&volver=/mis-avisos')}>Crear cuenta</button>
+            </div>
+          }
         />
       </div>
     )

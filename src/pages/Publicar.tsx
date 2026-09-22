@@ -57,10 +57,16 @@ export const Publicar = () => {
           <Icono nombre="candado" tam={30} className="tenue" style={{ margin: '0 auto 14px' }} />
           <h2>Entra para publicar</h2>
           <p className="tenue" style={{ margin: '10px 0 20px' }}>
-            Solo la comunidad UCN puede publicar. Usa el menú de arriba a la derecha para entrar con una cuenta de
-            demostración.
+            Solo la comunidad UCN puede publicar. Entra con tu correo institucional o crea tu cuenta: toma un minuto.
           </p>
-          <button className="btn btn-primario" onClick={() => navegar('/')}>Volver al inicio</button>
+          <div className="fila" style={{ justifyContent: 'center', gap: 8 }}>
+            <button className="btn btn-primario" onClick={() => navegar('/entrar?volver=/publicar')}>
+              <Icono nombre="candado" tam={16} /> Iniciar sesión
+            </button>
+            <button className="btn" onClick={() => navegar('/entrar?crear=1&volver=/publicar')}>
+              Crear cuenta
+            </button>
+          </div>
         </div>
       </div>
     )

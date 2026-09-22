@@ -317,11 +317,15 @@ export const Inicio = () => {
           <div className="panel panel-relleno centro" style={{ padding: 36 }}>
             <h2>¿Tienes algo que ofrecer?</h2>
             <p className="tenue" style={{ maxWidth: '52ch', margin: '10px auto 22px' }}>
-              Entra con tu correo institucional y publica en un par de minutos. Cualquier estudiante de la UCN puede.
+              Crea tu cuenta con el correo institucional y publica en un par de minutos. Cualquier estudiante de la
+              UCN puede.
             </p>
-            <Link to="/publicar" className="btn btn-primario btn-grande">
-              <Icono nombre="mas" tam={18} /> Publicar mi primer aviso
-            </Link>
+            <div className="fila" style={{ justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <Link to="/entrar?crear=1&volver=/publicar" className="btn btn-primario btn-grande">
+                <Icono nombre="mas" tam={18} /> Crear mi cuenta
+              </Link>
+              <Link to="/entrar" className="btn btn-grande">Ya tengo cuenta</Link>
+            </div>
           </div>
         </section>
       )}

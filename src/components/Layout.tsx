@@ -113,6 +113,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               ) : (
                 <span style={{ padding: '0 10px' }}>Entrar</span>
               )}
+              {usuario && <span className="solo-lectores">Menú de {usuario.nombre}</span>}
             </button>
 
             {menuAbierto && (
@@ -138,9 +139,17 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     )}
                   </>
                 ) : (
-                  <div style={{ padding: '10px 11px' }} className="chico tenue">
-                    Entra con tu cuenta UCN para publicar.
-                  </div>
+                  <>
+                    <div style={{ padding: '10px 11px 6px' }} className="chico tenue">
+                      Entra con tu correo UCN para publicar avisos y seguir tus estadísticas.
+                    </div>
+                    <button className="menu-item" onClick={() => { navegar('/entrar'); setMenuAbierto(false) }}>
+                      <Icono nombre="candado" tam={17} /> Iniciar sesión
+                    </button>
+                    <button className="menu-item" onClick={() => { navegar('/entrar?crear=1'); setMenuAbierto(false) }}>
+                      <Icono nombre="mas" tam={17} /> Crear una cuenta
+                    </button>
+                  </>
                 )}
 
                 <hr className="separador" />
@@ -164,9 +173,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     <Icono nombre="escudo" tam={17} /> Entrar al panel de la FEUCN
                   </button>
                 )}
-                <button className="menu-item" onClick={() => { cambiarUsuario(null); setMenuAbierto(false) }}>
-                  <Icono nombre="candado" tam={17} /> Salir
-                </button>
+                {usuario && (
+                  <button className="menu-item" onClick={() => { cambiarUsuario(null); setMenuAbierto(false); avisar('Cerraste sesión', 'ok') }}>
+                    <Icono nombre="candado" tam={17} /> Cerrar sesión
+                  </button>
+                )}
               </div>
             )}
           </div>

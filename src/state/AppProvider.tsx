@@ -59,7 +59,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setCargando(false)
       return
     }
-    void api.sincronizar().finally(() => setCargando(false))
+    // Primero la sesión: sincronizar sin ella traería solo lo público y el
+    // equipo vería el panel vacío hasta la siguiente recarga.
+    void api
+      .restaurarSesion()
+      .then(() => api.sincronizar())
+      .finally(() => setCargando(false))
 
     const alVolver = () => {
       if (document.visibilityState === 'visible') void api.sincronizar()

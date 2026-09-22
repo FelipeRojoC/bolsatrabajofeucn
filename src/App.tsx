@@ -20,6 +20,7 @@ const Feucn = lazy(() => import('./pages/Feucn').then((m) => ({ default: m.Feucn
 const Moderacion = lazy(() => import('./pages/Moderacion').then((m) => ({ default: m.Moderacion })))
 const Feria = lazy(() => import('./pages/Feria').then((m) => ({ default: m.Feria })))
 const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })))
+const Entrar = lazy(() => import('./pages/Entrar').then((m) => ({ default: m.Entrar })))
 
 /** Cambiar de página vuelve arriba; sin esto se aterriza a media página. */
 const AlCambiarDeRuta = () => {
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/feria" element={<Feria />} />
           <Route path="/moderacion" element={<Moderacion />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/entrar" element={<Entrar />} />
           <Route
             path="*"
             element={

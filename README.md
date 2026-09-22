@@ -30,6 +30,7 @@ npm run build    # bundle de producción en dist/
 | Mis avisos | `/mis-avisos` | Métricas por aviso, renovación y guardados |
 | Estadísticas | `/estadisticas` | Panel público de uso de la plataforma |
 | La FEUCN | `/feucn` | Quiénes son, reglamento de la bolsa, contacto y oficina |
+| Entrar | `/entrar` | Registro e ingreso de estudiantes con correo UCN |
 | Ingreso | `/admin` | Acceso del equipo con usuario y contraseña |
 | Panel | `/moderacion` | Cola por riesgo, reportes, altas, suscripciones y ferias |
 
@@ -81,6 +82,30 @@ El aporte y el alimento **no se cobran en el sitio**: se entregan en la oficina
 de la federación y ahí se marcan en la lista.
 
 ---
+
+## Cuentas
+
+### Estudiantes
+
+Se registran solos en `/entrar`, con nombre, correo institucional, carrera y
+contraseña. Los dominios aceptados son `@alumnos.ucn.cl`, `@ce.ucn.cl`,
+`@ucn.cl` y `@feucn.cl`; la lista vive en la función `correo_institucional()`
+de la base, no en el navegador, así que no se salta hablándole a la API.
+
+**Confirmación por código.** Al crear la cuenta llega un código de 6 dígitos al
+correo, y lo mismo al recuperar la contraseña. Las plantillas que Supabase trae
+de fábrica mandan un enlace, no un código: hay que reemplazarlas con las de
+`supabase/plantillas-correo.md` (Authentication → Emails → Templates), que usan
+`{{ .Token }}`.
+
+> Para que los correos lleguen a cualquier estudiante hace falta SMTP propio.
+> El servidor de cortesía de Supabase manda unos pocos mensajes por hora y solo
+> a direcciones del equipo del proyecto. El paso a paso con Resend está en ese
+> mismo archivo.
+
+El campo del código usa `autocomplete="one-time-code"`, así que en el teléfono
+el sistema lo ofrece pegado apenas llega el correo, y se envía solo al completar
+los seis dígitos.
 
 ## Acceso del equipo
 
@@ -147,7 +172,9 @@ Menú lateral → **SQL Editor** → *New query*. Pega y ejecuta, en este orden:
 1. `supabase/schema.sql` — tablas, índices, triggers y políticas.
 2. `supabase/02-seguridad.sql` — endurecimiento. **No es opcional**: corrige una
    escalada de privilegios que dejaba a cualquier cuenta nombrarse administradora.
-3. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
+3. `supabase/04-cuentas-estudiantes.sql` — deja que los estudiantes se
+   registren solos, pero únicamente con correo institucional UCN.
+4. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
    para recorrer el sitio con contenido. Se borra con dos `delete` que están
    comentados al principio del archivo.
 
@@ -221,6 +248,8 @@ Lo que se cerró, y cómo comprobarlo:
 | **Basura en la base** | Límites de longitud en cada campo de texto, máximo de imágenes, RUT validado con dígito verificador en el servidor y correo validado por formato. |
 | **Inflar contadores** | `registrar_evento()` comprueba que el aviso exista y esté publicado; escribir la tabla de eventos a mano quedó revocado. |
 | **Ventanas robadas** | Todo enlace externo lleva `rel="noopener noreferrer"`. |
+| **Cuentas falsas** | Registrarse exige correo institucional UCN, validado por un trigger en la base, y confirmarlo con un código que llega a ese correo. El rol siempre nace como `estudiante`. |
+| **Suplantación** | El correo de un perfil no se puede editar: es la identidad de la cuenta y vive en `auth.users`. |
 | **Dependencias** | `npm audit` en cero. |
 
 Lo que **no** está cubierto y depende de la configuración del proyecto:
@@ -238,16 +267,14 @@ tiene abiertas por su propia forma.
 
 ### Lo que sigue pendiente
 
-1. **Autenticación de estudiantes.** El panel ya entra por Supabase Auth, pero
-   publicar avisos todavía usa una sesión de demostración. Falta el registro con
-   correo institucional para el resto del sitio.
-2. **Tiles del mapa.** `MapaLeaflet.tsx` usa los tiles públicos de
+1. **Tiles del mapa.** `MapaLeaflet.tsx` usa los tiles públicos de
    OpenStreetMap, que no cubren una aplicación con tráfico real. Hay que
    contratar un proveedor (MapTiler, Stadia, Mapbox). Si fallan, el mapa avisa
    y el punto igual queda guardado.
-3. **Imágenes.** Hoy se guardan como data URL comprimidas; deberían ir a
+2. **Imágenes.** Hoy se guardan como data URL comprimidas; deberían ir a
    Supabase Storage y dejar en el aviso solo la URL.
-4. **Correos de aprobación y rechazo** de avisos, igual que los de la feria.
+3. **Correos de aprobación y rechazo** de avisos, igual que los de la feria.
+4. **SMTP propio**, sin el cual los códigos de confirmación no salen del equipo.
 
 ---
 
