@@ -99,8 +99,8 @@ Deno.serve(async (req) => {
           <table style="border-collapse:collapse;margin:18px 0">
             <tr><td style="padding:4px 14px 4px 0;color:#555">Fecha</td><td><strong>${fecha}</strong></td></tr>
             <tr><td style="padding:4px 14px 4px 0;color:#555">Lugar</td><td><strong>${feria.lugar}</strong></td></tr>
-            <tr><td style="padding:4px 14px 4px 0;color:#555">Tu puesto</td><td><strong>N° ${p.puesto ?? 'por asignar'}</strong> ${
-              p.es_mapau ? '(asignado por la federación)' : '(asignado por sorteo)'
+            <tr><td style="padding:4px 14px 4px 0;color:#555">Tu mesa</td><td><strong>N° ${p.puesto ?? 'por asignar'}</strong> ${
+              p.es_mapau ? '(MAPAU)' : '(asignada por sorteo)'
             }</td></tr>
           </table>
           <p>Para confirmar tu cupo, pasa por la oficina de la federación antes del evento con:</p>

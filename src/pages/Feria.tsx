@@ -61,7 +61,7 @@ export const Feria = () => {
                 </div>
                 <div className="heroe-cifra">
                   <strong className="numero">{feria.puestos}</strong>
-                  <span>puestos disponibles</span>
+                  <span>mesas disponibles</span>
                 </div>
                 <div className="heroe-cifra">
                   <strong className="numero">{formatearPrecio(feria.montoInscripcion)}</strong>
@@ -101,7 +101,7 @@ export const Feria = () => {
           <div className="mayus tenue" style={{ marginBottom: 8 }}>Datos de la feria</div>
           <div className="dato"><span className="dato-lbl">Fecha</span><span className="dato-val">{fechaLarga(feria.fecha)}</span></div>
           <div className="dato"><span className="dato-lbl">Lugar</span><span className="dato-val">{feria.lugar}</span></div>
-          <div className="dato"><span className="dato-lbl">Puestos</span><span className="dato-val numero">{feria.puestos}</span></div>
+          <div className="dato"><span className="dato-lbl">Mesas</span><span className="dato-val numero">{feria.puestos}</span></div>
           <div className="dato">
             <span className="dato-lbl">Aporte</span>
             <span className="dato-val">
@@ -111,7 +111,9 @@ export const Feria = () => {
           </div>
           <div className="dato">
             <span className="dato-lbl">Asignación</span>
-            <span className="dato-val">Sorteo al azar entre los seleccionados</span>
+            <span className="dato-val">
+              MAPAU toma las primeras mesas; el resto se sortea al azar
+            </span>
           </div>
         </div>
 
@@ -128,7 +130,7 @@ export const Feria = () => {
             <h2>Postulación registrada</h2>
             <p className="tenue" style={{ maxWidth: '52ch', margin: '10px auto 0' }}>
               Quedaste en la lista. Cuando la federación termine la selección te llega un correo diciendo si quedaste y
-              qué número de puesto te tocó.
+              qué número de mesa te tocó.
             </p>
             {enviada.puesto && (
               <p className="chico" style={{ color: 'var(--aviso-tinta)', marginTop: 12 }}>
@@ -296,7 +298,7 @@ const FormularioPostulacion = ({
           <span className="chico tenue">
             Mi emprendimiento pertenece a <strong>MAPAU</strong>.
             <span style={{ display: 'block' }} className="mini muy-tenue">
-              Los emprendimientos MAPAU quedan fuera del sorteo: su puesto lo asigna la federación a mano.
+              Los emprendimientos MAPAU toman las primeras mesas; las demás se sortean entre el resto.
             </span>
           </span>
         </label>

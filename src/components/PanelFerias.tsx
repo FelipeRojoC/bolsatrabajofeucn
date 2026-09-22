@@ -51,9 +51,8 @@ export const PanelFerias = () => {
   const sinAvisar = seleccionados.filter((p) => !p.avisadoEn)
   const visibles = filtro === 'todas' ? postulaciones : postulaciones.filter((p) => p.estado === filtro)
   const conPuesto = seleccionados.filter((p) => p.puesto)
-  const mapauPendientes = seleccionados.filter((p) => p.esMapau && !p.puesto)
-  // Quien se selecciona después de un sorteo queda sin número hasta el siguiente.
-  const sorteoPendiente = seleccionados.filter((p) => !p.esMapau && !p.puesto)
+  // Quien se selecciona después de un sorteo queda sin mesa hasta el siguiente.
+  const sorteoPendiente = seleccionados.filter((p) => !p.puesto)
   const pagaron = seleccionados.filter((p) => p.pagoInscripcion).length
   const entregaron = seleccionados.filter((p) => p.entregaAlimento).length
 
@@ -66,12 +65,13 @@ export const PanelFerias = () => {
   const sortear = async () => {
     if (!seleccionados.length) return avisar('Primero selecciona a los emprendimientos.', 'error')
     const r = await api.sortearPuestos(feria.id)
+    const base = r.mapau
+      ? `${r.mapau} MAPAU tomaron las primeras mesas y ${r.sorteados} se sortearon.`
+      : `${r.sorteados} mesas sorteadas al azar.`
     if (r.sinPuesto > 0) {
-      avisar(`Se repartieron ${r.asignados} puestos y ${r.sinPuesto} quedaron fuera: hay más seleccionados que puestos.`, 'error')
-    } else if (r.mapauPendientes > 0) {
-      avisar(`${r.asignados} puestos sorteados. Faltan ${r.mapauPendientes} MAPAU por asignar a mano.`, 'info')
+      avisar(`${base} ${r.sinPuesto} quedaron sin mesa: hay más seleccionados que mesas.`, 'error')
     } else {
-      avisar(`Puestos sorteados: ${r.asignados} asignados al azar.`, 'ok')
+      avisar(base, 'ok')
     }
   }
 
@@ -137,7 +137,7 @@ export const PanelFerias = () => {
        <table>
          <thead>
            <tr>
-             <th class="num">N°</th>
+             <th class="num">Mesa</th>
              <th>Emprendimiento</th>
              <th>Responsable y RUT</th>
              <th>Firma — pagó ${formatearPrecio(feria.montoInscripcion)}</th>
@@ -147,8 +147,8 @@ export const PanelFerias = () => {
          <tbody>${filas}</tbody>
        </table>
        <div class="nota">
-         Cada firma confirma la entrega en la oficina de la federación. Los emprendimientos MAPAU tienen puesto
-         asignado por la federación y no entran al sorteo.
+         Cada firma confirma la entrega en la oficina de la federación. Los emprendimientos MAPAU toman las primeras mesas; el
+         resto se sortea entre las que quedan.
        </div>
        <div class="pie">
          <span>Emitido el ${fechaLarga(new Date().toISOString())}</span>
@@ -205,7 +205,7 @@ export const PanelFerias = () => {
         <Cifra
           etiqueta="Seleccionados"
           valor={`${formatearNumero(seleccionados.length)} / ${feria.puestos}`}
-          pie={`${conPuesto.length} con puesto asignado`}
+          pie={`${conPuesto.length} con mesa asignada`}
         />
         <Cifra
           etiqueta="Aporte recibido"
@@ -239,7 +239,7 @@ export const PanelFerias = () => {
           </button>
 
           <button className="btn btn-chico" onClick={sortear} disabled={!seleccionados.length}>
-            <Icono nombre="destello" tam={15} /> Sortear puestos
+            <Icono nombre="destello" tam={15} /> Sortear mesas
           </button>
 
           <button className="btn btn-chico" onClick={() => setCorreoAbierto(true)} disabled={!seleccionados.length}>
@@ -267,26 +267,11 @@ export const PanelFerias = () => {
           <Nota tono="aviso" icono="alerta">
             <strong>
               {sorteoPendiente.length === 1
-                ? 'Hay un seleccionado sin puesto'
-                : `Hay ${sorteoPendiente.length} seleccionados sin puesto`}
+                ? 'Hay un seleccionado sin mesa'
+                : `Hay ${sorteoPendiente.length} seleccionados sin mesa`}
               .
             </strong>{' '}
-            Se sumaron después del último sorteo. Vuelve a sortear para repartir los números de nuevo.
-          </Nota>
-        </div>
-      )}
-
-      {mapauPendientes.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <Nota tono="aviso" icono="alerta">
-            <strong>
-              {mapauPendientes.length === 1
-                ? 'Un emprendimiento MAPAU espera puesto'
-                : `${mapauPendientes.length} emprendimientos MAPAU esperan puesto`}
-              :
-            </strong>{' '}
-            {mapauPendientes.map((p) => p.nombreEmprendimiento).join(', ')}. No entran al sorteo — escribe su número
-            en la columna "Puesto".
+            Se sumaron después del último sorteo. Vuelve a sortear para repartir las mesas de nuevo.
           </Nota>
         </div>
       )}
@@ -313,7 +298,7 @@ export const PanelFerias = () => {
           <table className="tabla">
             <thead>
               <tr>
-                <th scope="col" className="num">Puesto</th>
+                <th scope="col" className="num">Mesa</th>
                 <th scope="col">Emprendimiento</th>
                 <th scope="col">Responsable</th>
                 <th scope="col">Carrera</th>
@@ -335,7 +320,7 @@ export const PanelFerias = () => {
                         value={p.puesto ?? ''}
                         onChange={(e) => api.asignarPuesto(p.id, e.target.value ? Number(e.target.value) : undefined)}
                         style={{ width: 66, padding: '5px 7px', textAlign: 'center' }}
-                        aria-label={`Puesto de ${p.nombreEmprendimiento}`}
+                        aria-label={`Mesa de ${p.nombreEmprendimiento}`}
                       />
                     ) : (
                       <span className="muy-tenue">—</span>
@@ -346,7 +331,7 @@ export const PanelFerias = () => {
                     <span className="mini muy-tenue" style={{ display: 'block', fontWeight: 400 }}>
                       <span className="recorte-2">{p.descripcionBreve}</span>
                     </span>
-                    {p.esMapau && <span className="etiqueta etiqueta-marca" style={{ marginTop: 4 }}>MAPAU · puesto a mano</span>}
+                    {p.esMapau && <span className="etiqueta etiqueta-marca" style={{ marginTop: 4 }}>MAPAU · primeras mesas</span>}
                   </th>
                   <td>
                     <span className="chico">{p.nombreCompleto}</span>
@@ -433,7 +418,7 @@ const AvisoSeleccionados = ({
 
 · Fecha: ${fechaLarga(feria.fecha)}
 · Lugar: ${feria.lugar}
-· Tu puesto: N° ${p.puesto ?? 'por asignar'}${p.esMapau ? ' (asignado por la federación)' : ' (asignado por sorteo)'}
+· Tu mesa: N° ${p.puesto ?? 'por asignar'}${p.esMapau ? ' (MAPAU)' : ' (asignada por sorteo)'}
 
 Para confirmar tu cupo tienes que pasar por la oficina de la federación antes del evento con:
 1. El aporte de inscripción de ${formatearPrecio(feria.montoInscripcion)}.

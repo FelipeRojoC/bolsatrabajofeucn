@@ -687,32 +687,58 @@ export const cambiarEstadoPostulacion = async (
 }
 
 export interface ResultadoSorteo {
-  asignados: number
-  /** Seleccionados que se quedaron sin número porque no alcanzaron los puestos. */
+  /** MAPAU que tomaron los primeros números. */
+  mapau: number
+  /** Los demás, repartidos al azar entre los números que quedaron. */
+  sorteados: number
+  /** Seleccionados que se quedaron sin mesa porque no alcanzaron. */
   sinPuesto: number
-  /** MAPAU a la espera de que la federación les asigne puesto a mano. */
-  mapauPendientes: number
 }
 
 /**
- * Sortea los puestos entre los seleccionados.
+ * Reparte las mesas entre los seleccionados.
  *
- * Los emprendimientos MAPAU no entran al sorteo: su puesto lo asigna la
- * federación a mano. Los números que ya tengan reservados se sacan del bombo
- * para que nadie quede con el mismo.
+ * Los emprendimientos MAPAU van primero y toman los números más bajos, en el
+ * orden en que postularon; recién después se sortean las mesas que sobran entre
+ * el resto. Si la administración ya le puso un número a alguien a mano, ese
+ * número se respeta y sale del bombo.
  */
 export const sortearPuestos = async (feriaId: string): Promise<ResultadoSorteo> => {
   const db = leer()
   const feria = db.ferias.find((f) => f.id === feriaId)
-  if (!feria) return demora({ asignados: 0, sinPuesto: 0, mapauPendientes: 0 })
+  if (!feria) return demora({ mapau: 0, sorteados: 0, sinPuesto: 0 })
 
-  const seleccionados = db.postulaciones.filter((p) => p.feriaId === feriaId && p.estado === 'seleccionada')
+  // listarPostulaciones ordena por fecha de postulación: los MAPAU respetan ese orden.
+  const seleccionados = listarPostulaciones(feriaId).filter((p) => p.estado === 'seleccionada')
   const mapau = seleccionados.filter((p) => p.esMapau)
-  const alBombo = seleccionados.filter((p) => !p.esMapau)
+  const resto = seleccionados.filter((p) => !p.esMapau)
 
-  const reservados = new Set(mapau.filter((p) => p.puesto).map((p) => p.puesto as number))
+  const tomados = new Set<number>(mapau.filter((p) => p.puesto).map((p) => p.puesto as number))
+
+  // 1. MAPAU: los primeros números libres, de menor a mayor.
+  let mapauAsignados = 0
+  let sinPuesto = 0
+  let siguiente = 1
+  for (const p of mapau) {
+    if (p.puesto) {
+      mapauAsignados++
+      continue
+    }
+    while (siguiente <= feria.puestos && tomados.has(siguiente)) siguiente++
+    if (siguiente > feria.puestos) {
+      p.puesto = undefined
+      sinPuesto++
+      continue
+    }
+    p.puesto = siguiente
+    tomados.add(siguiente)
+    mapauAsignados++
+    siguiente++
+  }
+
+  // 2. El resto: sorteo entre las mesas que quedan.
   const libres: number[] = []
-  for (let n = 1; n <= feria.puestos; n++) if (!reservados.has(n)) libres.push(n)
+  for (let n = 1; n <= feria.puestos; n++) if (!tomados.has(n)) libres.push(n)
 
   // Fisher-Yates: cada orden posible tiene la misma probabilidad.
   for (let i = libres.length - 1; i > 0; i--) {
@@ -720,25 +746,21 @@ export const sortearPuestos = async (feriaId: string): Promise<ResultadoSorteo> 
     ;[libres[i], libres[j]] = [libres[j], libres[i]]
   }
 
-  let asignados = 0
-  let sinPuesto = 0
-  for (const p of alBombo) {
+  let sorteados = 0
+  for (const p of resto) {
     const n = libres.pop()
     if (n === undefined) {
       p.puesto = undefined
       sinPuesto++
     } else {
       p.puesto = n
-      asignados++
+      sorteados++
     }
   }
 
   escribir(db)
   notificar()
-  return demora(
-    { asignados, sinPuesto, mapauPendientes: mapau.filter((p) => !p.puesto).length },
-    400,
-  )
+  return demora({ mapau: mapauAsignados, sorteados, sinPuesto }, 400)
 }
 
 export const asignarPuesto = async (postulacionId: string, puesto: number | undefined) => {

@@ -62,15 +62,17 @@ sin planillas sueltas ni cadenas de WhatsApp:
    con su dígito verificador y se acepta una sola postulación por RUT.
 3. **Al llegar al cupo, se cierra sola.** No hay que estar mirando el contador.
 4. **Se selecciona** por orden de llegada con un botón, o una por una.
-5. **Se sortean los puestos** con Fisher-Yates, que reparte parejo. Los
-   emprendimientos **MAPAU quedan fuera del sorteo**: su puesto lo escribe la
-   federación a mano y el panel avisa cuáles están pendientes.
+5. **Se reparten las mesas.** Los emprendimientos **MAPAU van primero** y toman
+   los números más bajos, en el orden en que postularon; recién después se
+   sortean las mesas restantes entre los demás, con Fisher-Yates. Si la
+   federación ya le puso un número a alguien a mano, ese número se respeta y
+   sale del bombo.
 6. **Se avisa a los seleccionados.** Sin backend, el panel deja la lista de
    correos y el mensaje listos para pegar; con Supabase conectado, la Edge
    Function `avisar-seleccionados` los manda de verdad y marca quién recibió.
 7. **Se descarga la planilla** en CSV, que Excel abre directo (separador `;` y
    BOM UTF-8, para que las tildes no salgan rotas).
-8. **Se imprime la hoja de control**: una tabla por número de puesto con
+8. **Se imprime la hoja de control**: una tabla por número de mesa con
    emprendimiento, responsable, RUT y dos columnas de firma — una por el aporte
    y otra por el alimento — para ir marcando en la entrada. Sale del diálogo de
    impresión del navegador, así que se guarda como PDF o se imprime directo.
@@ -208,10 +210,10 @@ de escala. No bloquea nada — ordena la cola para que lo sospechoso se revise
 primero, y el mismo aviso se le muestra al autor **antes** de publicar para que
 pueda corregir.
 
-**Sorteo reproducible y justo.** Los puestos de feria se reparten con
-Fisher-Yates, que da la misma probabilidad a cada orden posible; los números ya
-reservados por MAPAU salen del bombo antes de barajar, y un índice único en la
-base impide que dos emprendimientos queden en el mismo puesto.
+**Sorteo justo, con una prioridad explícita.** MAPAU toma las primeras mesas
+por regla de la federación, no por azar; lo que queda se reparte con
+Fisher-Yates, que da la misma probabilidad a cada orden posible. Un índice único
+en la base impide que dos emprendimientos terminen en la misma mesa.
 
 **Cruce de objetos perdidos.** El foro compara lo perdido contra lo encontrado
 por categoría, campus y palabras en común, y propone pares arriba del listado.
@@ -268,7 +270,7 @@ Al abrir por primera vez se cargan datos deterministas: avisos vigentes, casos
 del foro, emprendimientos con distintos planes, una cola de moderación con
 casos límite a propósito (uno pide pago adelantado, otro ofrece trabajos
 académicos), una feria abierta con doce postulaciones —dos de ellas MAPAU, para
-ver la excepción del sorteo— y un mes de eventos para que las series tengan
+ver la prioridad de mesas— y un mes de eventos para que las series tengan
 historia. Los RUT de demostración tienen dígito verificador válido.
 
 Para cambiar de cuenta de estudiante se usa el menú del avatar; al panel se
