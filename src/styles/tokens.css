@@ -1,0 +1,222 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Tokens de diseño — Bolsa FEUCN
+   Las superficies y la paleta de series salen validadas del chequeo de
+   accesibilidad cromática (banda de luminosidad, piso de croma, separación
+   para daltonismo y contraste contra la superficie real).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  /* Superficies */
+  --superficie: #fcfcfb;
+  --plano: #f4f4f1;
+  --plano-2: #eceae5;
+  --elevado: #ffffff;
+  --velo: rgba(11, 11, 11, 0.42);
+
+  /* Tinta */
+  --tinta: #0b0b0b;
+  --tinta-2: #52514e;
+  --tinta-3: #898781;
+  --tinta-inversa: #ffffff;
+
+  /* Líneas */
+  --borde: rgba(11, 11, 11, 0.10);
+  --borde-fuerte: rgba(11, 11, 11, 0.18);
+  --grilla: #e1e0d9;
+  --eje: #c3c2b7;
+
+  /* Marca UCN / FEUCN */
+  --marca: #1857b5;
+  --marca-fuerte: #123f85;
+  --marca-suave: #e8f0fd;
+  --marca-tinta: #123f85;
+  --acento: #0f9aa8;
+  --acento-suave: #e2f5f6;
+
+  /* Series de datos (paleta categórica validada) */
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --serie-4: #eda100;
+  --serie-5: #e87ba4;
+  --serie-6: #4a3aa7;
+
+  /* Rampa secuencial azul (magnitud) */
+  --seq-100: #cde2fb;
+  --seq-200: #9ec5f4;
+  --seq-300: #6da7ec;
+  --seq-400: #3987e5;
+  --seq-500: #256abf;
+  --seq-600: #184f95;
+  --seq-700: #0d366b;
+
+  /* Rampa ordinal (pasos discretos: embudo, niveles). Validada aparte de la
+     secuencial: acá el paso más claro debe seguir leyéndose sobre la superficie. */
+  --ord-1: #6da7ec;
+  --ord-2: #3987e5;
+  --ord-3: #256abf;
+  --ord-4: #184f95;
+
+  /* Estado (nunca se reutilizan como serie) */
+  --ok: #0ca30c;
+  --ok-suave: #e4f6e4;
+  --ok-tinta: #006300;
+  --aviso: #fab219;
+  --aviso-suave: #fdf3dc;
+  --aviso-tinta: #7a5200;
+  --serio: #ec835a;
+  --serio-suave: #fdeee7;
+  --serio-tinta: #8a3b16;
+  --critico: #d03b3b;
+  --critico-suave: #fbeaea;
+  --critico-tinta: #9b1f1f;
+
+  /* Forma */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  /* Sombra */
+  --sombra-1: 0 1px 2px rgba(11, 11, 11, 0.05);
+  --sombra-2: 0 2px 8px rgba(11, 11, 11, 0.07), 0 1px 2px rgba(11, 11, 11, 0.04);
+  --sombra-3: 0 12px 32px rgba(11, 11, 11, 0.12), 0 2px 8px rgba(11, 11, 11, 0.06);
+  --sombra-foco: 0 0 0 3px rgba(24, 87, 181, 0.28);
+
+  /* Tipografía */
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --fuente-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Ritmo */
+  --ancho: 1180px;
+  --barra-h: 64px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --superficie: #1a1a19;
+  --plano: #131312;
+  --plano-2: #232321;
+  --elevado: #232321;
+  --velo: rgba(0, 0, 0, 0.66);
+
+  --tinta: #ffffff;
+  --tinta-2: #c3c2b7;
+  --tinta-3: #8f8d86;
+  --tinta-inversa: #0b0b0b;
+
+  --borde: rgba(255, 255, 255, 0.11);
+  --borde-fuerte: rgba(255, 255, 255, 0.20);
+  --grilla: #2c2c2a;
+  --eje: #383835;
+
+  --marca: #5e9bf0;
+  --marca-fuerte: #8ab8f5;
+  --marca-suave: #17263c;
+  --marca-tinta: #bcd7fa;
+  --acento: #34bac7;
+  --acento-suave: #10302f;
+
+  /* Mismos ocho tonos, escalonados para la superficie oscura */
+  --serie-1: #3987e5;
+  --serie-2: #d95926;
+  --serie-3: #199e70;
+  --serie-4: #c98500;
+  --serie-5: #d55181;
+  --serie-6: #9085e9;
+
+  --seq-100: #0d366b;
+  --seq-200: #184f95;
+  --seq-300: #256abf;
+  --seq-400: #2a78d6;
+  --seq-500: #3987e5;
+  --seq-600: #6da7ec;
+  --seq-700: #9ec5f4;
+
+  --ord-1: #184f95;
+  --ord-2: #2a78d6;
+  --ord-3: #5598e7;
+  --ord-4: #9ec5f4;
+
+  --ok-suave: #10280f;
+  --ok-tinta: #6fd36f;
+  --aviso-suave: #2e2410;
+  --aviso-tinta: #f3c356;
+  --serio-suave: #2f1d14;
+  --serio-tinta: #f0a780;
+  --critico-suave: #2e1414;
+  --critico-tinta: #f08d8d;
+
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --sombra-2: 0 2px 10px rgba(0, 0, 0, 0.5);
+  --sombra-3: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --sombra-foco: 0 0 0 3px rgba(94, 155, 240, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    color-scheme: dark;
+
+    --superficie: #1a1a19;
+    --plano: #131312;
+    --plano-2: #232321;
+    --elevado: #232321;
+    --velo: rgba(0, 0, 0, 0.66);
+
+    --tinta: #ffffff;
+    --tinta-2: #c3c2b7;
+    --tinta-3: #8f8d86;
+    --tinta-inversa: #0b0b0b;
+
+    --borde: rgba(255, 255, 255, 0.11);
+    --borde-fuerte: rgba(255, 255, 255, 0.20);
+    --grilla: #2c2c2a;
+    --eje: #383835;
+
+    --marca: #5e9bf0;
+    --marca-fuerte: #8ab8f5;
+    --marca-suave: #17263c;
+    --marca-tinta: #bcd7fa;
+    --acento: #34bac7;
+    --acento-suave: #10302f;
+
+    --serie-1: #3987e5;
+    --serie-2: #d95926;
+    --serie-3: #199e70;
+    --serie-4: #c98500;
+    --serie-5: #d55181;
+    --serie-6: #9085e9;
+
+    --seq-100: #0d366b;
+    --seq-200: #184f95;
+    --seq-300: #256abf;
+    --seq-400: #2a78d6;
+    --seq-500: #3987e5;
+    --seq-600: #6da7ec;
+    --seq-700: #9ec5f4;
+
+  --ord-1: #184f95;
+  --ord-2: #2a78d6;
+  --ord-3: #5598e7;
+  --ord-4: #9ec5f4;
+
+    --ok-suave: #10280f;
+    --ok-tinta: #6fd36f;
+    --aviso-suave: #2e2410;
+    --aviso-tinta: #f3c356;
+    --serio-suave: #2f1d14;
+    --serio-tinta: #f0a780;
+    --critico-suave: #2e1414;
+    --critico-tinta: #f08d8d;
+
+    --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sombra-2: 0 2px 10px rgba(0, 0, 0, 0.5);
+    --sombra-3: 0 16px 40px rgba(0, 0, 0, 0.6);
+    --sombra-foco: 0 0 0 3px rgba(94, 155, 240, 0.35);
+  }
+}
