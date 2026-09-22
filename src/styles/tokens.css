@@ -27,13 +27,32 @@
   --grilla: #e1e0d9;
   --eje: #c3c2b7;
 
-  /* Marca UCN / FEUCN */
-  --marca: #1857b5;
-  --marca-fuerte: #123f85;
-  --marca-suave: #e8f0fd;
-  --marca-tinta: #123f85;
+  /* Marca FEUCN Antofagasta — tomada del vitral del logo */
+  --marca: #0b7a54;
+  --marca-fuerte: #096444;
+  --marca-suave: #e3f5ed;
+  --marca-tinta: #075b3e;
   --acento: #0f9aa8;
   --acento-suave: #e2f5f6;
+
+  /* El vitral completo: azul, verde, amarillo, naranja, rojo, fucsia, violeta.
+     Es la firma de la federación: se usa en el logotipo y en los acentos. */
+  --vitral-1: #2a78d6;
+  --vitral-2: #1baf7a;
+  --vitral-3: #eda100;
+  --vitral-4: #eb6834;
+  --vitral-5: #e34948;
+  --vitral-6: #e87ba4;
+  --vitral-7: #4a3aa7;
+  --vitral: linear-gradient(
+    100deg,
+    var(--vitral-1) 0%,
+    var(--vitral-2) 20%,
+    var(--vitral-3) 40%,
+    var(--vitral-4) 58%,
+    var(--vitral-5) 76%,
+    var(--vitral-6) 100%
+  );
 
   /* Series de datos (paleta categórica validada) */
   --serie-1: #2a78d6;
@@ -85,7 +104,7 @@
   --sombra-1: 0 1px 2px rgba(11, 11, 11, 0.05);
   --sombra-2: 0 2px 8px rgba(11, 11, 11, 0.07), 0 1px 2px rgba(11, 11, 11, 0.04);
   --sombra-3: 0 12px 32px rgba(11, 11, 11, 0.12), 0 2px 8px rgba(11, 11, 11, 0.06);
-  --sombra-foco: 0 0 0 3px rgba(24, 87, 181, 0.28);
+  --sombra-foco: 0 0 0 3px rgba(11, 122, 84, 0.30);
 
   /* Tipografía */
   --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -115,12 +134,20 @@
   --grilla: #2c2c2a;
   --eje: #383835;
 
-  --marca: #5e9bf0;
-  --marca-fuerte: #8ab8f5;
-  --marca-suave: #17263c;
-  --marca-tinta: #bcd7fa;
+  --marca: #34c08c;
+  --marca-fuerte: #5bd3a7;
+  --marca-suave: #0e2a20;
+  --marca-tinta: #8fe3c2;
   --acento: #34bac7;
   --acento-suave: #10302f;
+
+  --vitral-1: #3987e5;
+  --vitral-2: #199e70;
+  --vitral-3: #c98500;
+  --vitral-4: #d95926;
+  --vitral-5: #e66767;
+  --vitral-6: #d55181;
+  --vitral-7: #9085e9;
 
   /* Mismos ocho tonos, escalonados para la superficie oscura */
   --serie-1: #3987e5;
@@ -155,7 +182,7 @@
   --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --sombra-2: 0 2px 10px rgba(0, 0, 0, 0.5);
   --sombra-3: 0 16px 40px rgba(0, 0, 0, 0.6);
-  --sombra-foco: 0 0 0 3px rgba(94, 155, 240, 0.35);
+  --sombra-foco: 0 0 0 3px rgba(52, 192, 140, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -178,12 +205,20 @@
     --grilla: #2c2c2a;
     --eje: #383835;
 
-    --marca: #5e9bf0;
-    --marca-fuerte: #8ab8f5;
-    --marca-suave: #17263c;
-    --marca-tinta: #bcd7fa;
+    --marca: #34c08c;
+    --marca-fuerte: #5bd3a7;
+    --marca-suave: #0e2a20;
+    --marca-tinta: #8fe3c2;
     --acento: #34bac7;
     --acento-suave: #10302f;
+
+    --vitral-1: #3987e5;
+    --vitral-2: #199e70;
+    --vitral-3: #c98500;
+    --vitral-4: #d95926;
+    --vitral-5: #e66767;
+    --vitral-6: #d55181;
+    --vitral-7: #9085e9;
 
     --serie-1: #3987e5;
     --serie-2: #d95926;
@@ -217,6 +252,6 @@
     --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.5);
     --sombra-2: 0 2px 10px rgba(0, 0, 0, 0.5);
     --sombra-3: 0 16px 40px rgba(0, 0, 0, 0.6);
-    --sombra-foco: 0 0 0 3px rgba(94, 155, 240, 0.35);
+    --sombra-foco: 0 0 0 3px rgba(52, 192, 140, 0.35);
   }
 }

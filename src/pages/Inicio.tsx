@@ -9,6 +9,7 @@ import { TarjetaAviso } from '../components/TarjetaAviso'
 import { DetalleAviso } from '../components/DetalleAviso'
 import { Icono } from '../components/Iconos'
 import { Nota } from '../components/UI'
+import { LogoFeucnGrande } from '../components/Logo'
 import { useApp } from '../state/contexto'
 import { useTic } from '../components/useTic'
 
@@ -19,9 +20,9 @@ const PASOS = [
     texto: 'Eliges el tipo, describes, marcas dónde te acomoda juntarte y listo. Sin fotos obligatorias.',
   },
   {
-    icono: 'escudo' as const,
-    titulo: 'Moderación lo revisa',
-    texto: 'La Comisión de Bienestar aprueba o devuelve el aviso con un motivo claro. Suele tardar menos de una hora.',
+    icono: 'whatsapp' as const,
+    titulo: 'Te escriben directo',
+    texto: 'Tu contacto aparece solo cuando alguien pulsa el botón, y tú ves cuánta gente lo hizo. Nada pasa por la plataforma.',
   },
   {
     icono: 'reloj' as const,
@@ -64,42 +65,52 @@ export const Inicio = () => {
     <>
       <section className="heroe">
         <div className="contenedor contenedor-ancho heroe-inner">
-          <span className="etiqueta etiqueta-marca" style={{ marginBottom: 16 }}>
-            <Icono nombre="destello" tam={13} /> Proyecto de la Federación de Estudiantes UCN
-          </span>
+          <div className="heroe-rejilla">
+            <div className="heroe-texto">
+              <span className="etiqueta etiqueta-marca" style={{ marginBottom: 16 }}>
+                <Icono nombre="destello" tam={13} /> Federación de Estudiantes UCN Antofagasta
+              </span>
 
-          <h1>Lo que necesitas ya lo tiene alguien de tu universidad.</h1>
-          <p className="heroe-bajada">
-            Trabajos, apuntes, cosas de segunda mano, objetos perdidos y los emprendimientos de tus compañeros. Sin
-            pagos por la plataforma, sin comisiones: ustedes coordinan, nosotros ponemos el lugar de encuentro.
-          </p>
+              <h1>Lo que necesitas ya lo tiene alguien de tu universidad.</h1>
+              <p className="heroe-bajada">
+                Trabajos, apuntes, cosas de segunda mano, objetos perdidos y los emprendimientos de tus compañeros.
+                Sin pagos por la plataforma, sin comisiones: ustedes coordinan, nosotros ponemos el lugar de encuentro.
+              </p>
 
-          <form className="buscador buscador-grande" style={{ marginTop: 26, maxWidth: 560 }} onSubmit={buscar}>
-            <Icono nombre="buscar" tam={20} />
-            <input
-              className="entrada"
-              placeholder="Busca calculadora, ayudantía, bicicleta…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              aria-label="Buscar en la bolsa"
-            />
-          </form>
+              <form className="buscador buscador-grande" style={{ marginTop: 26, maxWidth: 520 }} onSubmit={buscar}>
+                <Icono nombre="buscar" tam={20} />
+                <input
+                  className="entrada"
+                  placeholder="Busca calculadora, ayudantía, bicicleta…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  aria-label="Buscar en la bolsa"
+                />
+              </form>
 
-          <div className="heroe-pildoras">
-            {['Ayudantías', 'Libros y apuntes', 'Tecnología', 'Mudanza', 'Fotografía', 'Gratis'].map((s) => (
-              <button key={s} className="chip" onClick={() => navegar(`/avisos?q=${encodeURIComponent(s)}`)}>
-                {s}
-              </button>
-            ))}
-          </div>
+              <div className="heroe-pildoras">
+                {['Ayudantías', 'Libros y apuntes', 'Tecnología', 'Mudanza', 'Fotografía', 'Gratis'].map((s) => (
+                  <button key={s} className="chip" onClick={() => navegar(`/avisos?q=${encodeURIComponent(s)}`)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
 
-          <div className="heroe-acciones">
-            <Link to="/publicar" className="btn btn-primario btn-grande">
-              <Icono nombre="mas" tam={18} /> Publicar un aviso
-            </Link>
-            <Link to="/emprendimientos" className="btn btn-grande">
-              <Icono nombre="tienda" tam={18} /> Ver emprendimientos
-            </Link>
+              <div className="heroe-acciones">
+                <Link to="/publicar" className="btn btn-primario btn-grande">
+                  <Icono nombre="mas" tam={18} /> Publicar un aviso
+                </Link>
+                <Link to="/emprendimientos" className="btn btn-grande">
+                  <Icono nombre="tienda" tam={18} /> Ver emprendimientos
+                </Link>
+              </div>
+            </div>
+
+            <div className="heroe-marca">
+              <LogoFeucnGrande />
+              <span className="heroe-marca-lema">Bolsa de Trabajo FEUCN</span>
+              <span className="heroe-marca-sub">Antofagasta · Campus Central</span>
+            </div>
           </div>
 
           <div className="heroe-cifras">
@@ -116,8 +127,8 @@ export const Inicio = () => {
               <span>contactos pedidos</span>
             </div>
             <div className="heroe-cifra">
-              <strong className="numero">{datos.kpis.tiempoMedianoRevisionMin} min</strong>
-              <span>mediana de revisión</span>
+              <strong className="numero">{datos.kpis.resueltosForo}</strong>
+              <span>objetos devueltos</span>
             </div>
           </div>
         </div>

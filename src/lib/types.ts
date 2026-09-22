@@ -15,11 +15,11 @@ export type PostStatus =
   | 'expirado'    // superó los 5 días de vigencia
   | 'archivado'   // cerrado por su autor (vendido / cubierto / devuelto)
 
-export type Campus =
-  | 'Antofagasta — Casa Central'
-  | 'Antofagasta — Campus Angamos'
-  | 'Coquimbo — Campus Guayacán'
-  | 'Fuera del campus'
+/**
+ * La bolsa opera solo en Antofagasta y con un único campus, así que la
+ * ubicación no distingue sedes: lo que importa es el punto de encuentro.
+ */
+export type TipoLugar = 'campus' | 'fuera'
 
 export type ContactChannel = 'whatsapp' | 'correo' | 'instagram'
 
@@ -29,8 +29,9 @@ export interface GeoPoint {
 }
 
 export interface PostLocation {
-  campus: Campus
-  /** Punto de encuentro sugerido: "Biblioteca", "Casino central", etc. */
+  /** Dentro del campus o en la ciudad. */
+  tipo: TipoLugar
+  /** Punto de encuentro sugerido: "Biblioteca central", "Casino", etc. */
   zona: string
   /** Referencia libre escrita por el autor. */
   referencia?: string
@@ -147,7 +148,6 @@ export interface Emprendimiento {
   duenoId: string
   dueno: string
   carrera: string
-  campus: Campus
   plan: PlanId
   suscripcionHasta: string
   suscripcionStatus: SubscriptionStatus
@@ -172,14 +172,19 @@ export interface AnalyticsEvent {
   at: string
 }
 
-export type Role = 'visitante' | 'estudiante' | 'moderador'
+export type Role = 'visitante' | 'estudiante' | 'moderador' | 'admin'
+
+/** Credenciales de acceso al panel. Las cuentas se crean solo desde el backend. */
+export interface Credenciales {
+  usuario: string
+  clave: string
+}
 
 export interface User {
   id: string
   nombre: string
   correo: string
   carrera: string
-  campus: Campus
   role: Role
   avatar: string
 }

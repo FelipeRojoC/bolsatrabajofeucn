@@ -5,7 +5,7 @@ import { compacto, formatearNumero, porcentaje } from '../lib/format'
 import {
   DIAS_SEMANA,
   FRANJAS,
-  agruparPorCampus,
+  agruparPorZona,
   agruparPorCategoria,
   calcularKPIs,
   mapaDeCalor,
@@ -61,7 +61,7 @@ export const Estadisticas = () => {
       totalClics,
       embudo,
       categorias: agruparPorCategoria(publicos, 8),
-      campus: agruparPorCampus(publicos),
+      zonas: agruparPorZona(publicos),
       ranking: ranking(publicos, 6),
       revisados: {
         aprobados: posts.filter((p) => p.moderacion && p.status !== 'rechazado' && p.status !== 'pendiente').length,
@@ -188,9 +188,9 @@ export const Estadisticas = () => {
         />
 
         <GraficoBarras
-          titulo="Avisos por campus"
-          subtitulo="Dónde se mueve más la bolsa"
-          datos={d.campus}
+          titulo="Puntos de encuentro más usados"
+          subtitulo="Dónde propone juntarse la gente"
+          datos={d.zonas}
           etiquetaValor="Avisos"
           color="var(--serie-3)"
         />

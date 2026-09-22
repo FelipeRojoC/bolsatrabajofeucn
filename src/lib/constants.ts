@@ -1,4 +1,4 @@
-import type { Campus, GeoPoint, Plan, PostType } from './types'
+import type { GeoPoint, Plan, PostType, TipoLugar } from './types'
 
 /** Vigencia máxima de un aviso, en días. Regla del reglamento FEUCN. */
 export const MAX_DIAS_VIGENCIA = 5
@@ -75,28 +75,48 @@ export const RUBROS_EMPRENDIMIENTO = [
   'Otro',
 ]
 
-export const CAMPUS: { id: Campus; punto: GeoPoint; zonas: string[] }[] = [
+/** Campus Central UCN, avenida Angamos 0610, Antofagasta. */
+export const CAMPUS: { nombre: string; punto: GeoPoint } = {
+  nombre: 'Campus Central UCN',
+  punto: { lat: -23.6844, lng: -70.4115 },
+}
+
+/** Centro de Antofagasta, para los avisos que se coordinan fuera del campus. */
+export const CIUDAD: GeoPoint = { lat: -23.6509, lng: -70.3975 }
+
+export const LUGARES: { tipo: TipoLugar; etiqueta: string; zonas: string[] }[] = [
   {
-    id: 'Antofagasta — Casa Central',
-    punto: { lat: -23.6844, lng: -70.4115 },
-    zonas: ['Entrada principal', 'Biblioteca central', 'Casino', 'Patio de las banderas', 'Edificio Y', 'Gimnasio'],
+    tipo: 'campus',
+    etiqueta: 'En el campus',
+    zonas: [
+      'Entrada principal',
+      'Biblioteca central',
+      'Casino',
+      'Patio de las banderas',
+      'Edificio Y',
+      'Sala de estudio',
+      'Gimnasio',
+      'Estacionamiento',
+    ],
   },
   {
-    id: 'Antofagasta — Campus Angamos',
-    punto: { lat: -23.6939, lng: -70.4127 },
-    zonas: ['Hall de acceso', 'Laboratorios', 'Cafetería', 'Estacionamiento'],
-  },
-  {
-    id: 'Coquimbo — Campus Guayacán',
-    punto: { lat: -29.9764, lng: -71.3405 },
-    zonas: ['Entrada Larrondo', 'Biblioteca Guayacán', 'Casino', 'Pabellón de Ciencias del Mar', 'Cancha'],
-  },
-  {
-    id: 'Fuera del campus',
-    punto: { lat: -23.6509, lng: -70.3975 },
-    zonas: ['A coordinar por mensaje', 'Plaza pública', 'Mall / centro', 'Terminal de buses'],
+    tipo: 'fuera',
+    etiqueta: 'Fuera del campus',
+    zonas: [
+      'A coordinar por mensaje',
+      'Centro de Antofagasta',
+      'Mall Plaza Antofagasta',
+      'Terminal de buses',
+      'Sector norte',
+      'Sector sur',
+    ],
   },
 ]
+
+export const ZONAS_CAMPUS = LUGARES[0].zonas
+export const ZONAS_FUERA = LUGARES[1].zonas
+
+export const puntoBase = (tipo: TipoLugar): GeoPoint => (tipo === 'campus' ? CAMPUS.punto : CIUDAD)
 
 export const PLANES: Plan[] = [
   {

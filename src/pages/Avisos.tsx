@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import * as api from '../lib/api'
-import { CAMPUS, CATEGORIAS, TIPOS } from '../lib/constants'
+import { CATEGORIAS, LUGARES, TIPOS } from '../lib/constants'
 import { formatearNumero } from '../lib/format'
-import type { Post, PostType } from '../lib/types'
+import type { Post, PostType, TipoLugar } from '../lib/types'
 import { TarjetaAviso } from '../components/TarjetaAviso'
 import { DetalleAviso } from '../components/DetalleAviso'
 import { Icono } from '../components/Iconos'
@@ -24,7 +24,7 @@ export const Avisos = () => {
   const tipoInicial = params.get('tipo') as PostType | null
   const [tipos, setTipos] = useState<PostType[]>(tipoInicial ? [tipoInicial] : [])
   const [busqueda, setBusqueda] = useState(params.get('q') ?? '')
-  const [campus, setCampus] = useState<string>('')
+  const [lugar, setLugar] = useState<TipoLugar | ''>('')
   const [categoria, setCategoria] = useState<string>('')
   const [orden, setOrden] = useState<Orden>('recientes')
   const [soloGratis, setSoloGratis] = useState(false)
@@ -44,13 +44,13 @@ export const Avisos = () => {
     return api.filtrarPosts(api.listarTodos(), {
       tipos: tipos.length ? tipos : ['trabajo', 'venta'],
       busqueda,
-      campus: campus ? [campus] : undefined,
+      lugares: lugar ? [lugar] : undefined,
       categorias: categoria ? [categoria] : undefined,
       soloGratis,
       orden,
       status: ['aprobado'],
     })
-  }, [tipos, busqueda, campus, categoria, soloGratis, orden, revision])
+  }, [tipos, busqueda, lugar, categoria, soloGratis, orden, revision])
 
   // Mantiene actualizado el aviso abierto cuando cambian sus contadores.
   const postAbierto = abierto ? api.obtenerPost(abierto.id) ?? abierto : null
@@ -68,14 +68,14 @@ export const Avisos = () => {
   const limpiar = () => {
     setTipos([])
     setBusqueda('')
-    setCampus('')
+    setLugar('')
     setCategoria('')
     setSoloGratis(false)
     setOrden('recientes')
     setParams({})
   }
 
-  const hayFiltros = Boolean(tipos.length || busqueda || campus || categoria || soloGratis || orden !== 'recientes')
+  const hayFiltros = Boolean(tipos.length || busqueda || lugar || categoria || soloGratis || orden !== 'recientes')
 
   const cerrarDetalle = () => {
     setAbierto(null)
@@ -127,9 +127,15 @@ export const Avisos = () => {
 
             <span style={{ width: 1, height: 22, background: 'var(--borde)', flex: 'none' }} />
 
-            <select className="selector" style={{ width: 'auto', minWidth: 156 }} value={campus} onChange={(e) => setCampus(e.target.value)} aria-label="Filtrar por campus">
-              <option value="">Todos los campus</option>
-              {CAMPUS.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
+            <select
+              className="selector"
+              style={{ width: 'auto', minWidth: 168 }}
+              value={lugar}
+              onChange={(e) => setLugar(e.target.value as TipoLugar | '')}
+              aria-label="Filtrar por lugar de encuentro"
+            >
+              <option value="">En cualquier lugar</option>
+              {LUGARES.map((l) => <option key={l.tipo} value={l.tipo}>{l.etiqueta}</option>)}
             </select>
 
             <select className="selector" style={{ width: 'auto', minWidth: 150 }} value={categoria} onChange={(e) => setCategoria(e.target.value)} aria-label="Filtrar por categoría">

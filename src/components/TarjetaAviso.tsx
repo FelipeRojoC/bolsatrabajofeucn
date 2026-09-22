@@ -90,7 +90,10 @@ export const TarjetaAviso = ({ post, alAbrir, vistaAutor }: Props) => {
 
         <div className="tarjeta-meta">
           <Icono nombre="pin" tam={13} />
-          <span className="recorte-2">{post.ubicacion.zona} · {post.ubicacion.campus.split('—')[0].trim()}</span>
+          <span className="recorte-2">
+            {post.ubicacion.zona}
+            {post.ubicacion.tipo === 'fuera' && <span className="muy-tenue"> · fuera del campus</span>}
+          </span>
         </div>
 
         <div className="tarjeta-pie">

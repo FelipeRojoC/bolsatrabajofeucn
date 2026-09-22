@@ -172,7 +172,8 @@ export const DetalleAviso = ({ post, alCerrar }: Props) => {
             <div className="fila" style={{ marginTop: 10, gap: 8 }}>
               <Icono nombre="pin" tam={16} className="tenue" />
               <span className="chico">
-                <strong>{post.ubicacion.zona}</strong> · {post.ubicacion.campus}
+                <strong>{post.ubicacion.zona}</strong> ·{' '}
+                {post.ubicacion.tipo === 'campus' ? 'Campus Central UCN' : 'Fuera del campus'}
                 {post.ubicacion.referencia && <span className="tenue"> — {post.ubicacion.referencia}</span>}
               </span>
             </div>

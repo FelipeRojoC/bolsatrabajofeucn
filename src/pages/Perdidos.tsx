@@ -31,9 +31,11 @@ const sugerirCoincidencias = (posts: Post[]) => {
         puntaje += 3
         razones.push(`ambos en ${p.categoria.toLowerCase()}`)
       }
-      if (p.ubicacion.campus === e.ubicacion.campus) {
+      if (p.ubicacion.zona === e.ubicacion.zona) {
         puntaje += 2
-        razones.push('mismo campus')
+        razones.push(`los dos en ${p.ubicacion.zona.toLowerCase()}`)
+      } else if (p.ubicacion.tipo === e.ubicacion.tipo) {
+        puntaje += 1
       }
       const palabrasP = new Set(normalizar(p.titulo).split(/\W+/).filter((w) => w.length > 3))
       const comunes = normalizar(e.titulo).split(/\W+/).filter((w) => w.length > 3 && palabrasP.has(w))

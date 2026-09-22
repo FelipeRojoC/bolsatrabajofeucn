@@ -4,6 +4,7 @@ import { useApp } from '../state/contexto'
 import * as api from '../lib/api'
 import { Icono, type NombreIcono } from './Iconos'
 import { Avatar, Modal } from './UI'
+import { LogoFeucn } from './Logo'
 import { BuscadorRapido } from './BuscadorRapido'
 
 const NAV: { a: string; texto: string; icono: NombreIcono }[] = [
@@ -60,9 +61,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <a className="solo-lectores" href="#principal">Saltar al contenido</a>
 
       <header className="cabecera">
+        <div className="franja-vitral" aria-hidden="true" />
         <div className="contenedor contenedor-ancho cabecera-fila">
           <Link to="/" className="marca-logo">
-            <span className="marca-glifo">FE</span>
+            <LogoFeucn />
             <span className="marca-texto">
               Bolsa UCN
               <small>FEUCN</small>
@@ -168,11 +170,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <main id="principal" className="contenido">{children}</main>
 
       <footer className="pie">
+        <div className="franja-vitral" aria-hidden="true" />
         <div className="contenedor contenedor-ancho">
           <div className="pie-rejilla">
             <div>
               <Link to="/" className="marca-logo" style={{ marginBottom: 12 }}>
-                <span className="marca-glifo">FE</span>
+                <LogoFeucn />
                 <span className="marca-texto">Bolsa UCN<small>FEUCN</small></span>
               </Link>
               <p className="chico tenue" style={{ maxWidth: '32ch' }}>
@@ -208,7 +211,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
           <div className="pie-legal">
             <span>
-              Proyecto de la Federación de Estudiantes UCN · Antofagasta y Coquimbo
+              Proyecto de la Federación de Estudiantes UCN · Antofagasta
             </span>
             <span>Esta plataforma no procesa pagos ni participa en las transacciones.</span>
           </div>

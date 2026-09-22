@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import * as api from '../lib/api'
-import { CAMPUS, CATEGORIAS, MAX_DIAS_VIGENCIA, TIPOS } from '../lib/constants'
+import { CATEGORIAS, LUGARES, MAX_DIAS_VIGENCIA, TIPOS, puntoBase } from '../lib/constants'
 import { comprimirImagen } from '../lib/imagen'
 import { formatearPrecio } from '../lib/format'
-import type { Campus, ContactChannel, GeoPoint, LostKind, PostType } from '../lib/types'
+import type { ContactChannel, GeoPoint, LostKind, PostType, TipoLugar } from '../lib/types'
 import { Icono } from '../components/Iconos'
 import { Nota, PortadaGenerada } from '../components/UI'
 import { Mapa } from '../components/Mapa'
@@ -31,17 +31,17 @@ export const Publicar = () => {
   const [precioNota, setPrecioNota] = useState('')
   const [estadoArticulo, setEstadoArticulo] = useState<'nuevo' | 'como-nuevo' | 'usado'>('usado')
   const [imagenes, setImagenes] = useState<string[]>([])
-  const [campus, setCampus] = useState<Campus>(usuario?.campus ?? CAMPUS[0].id)
+  const [lugar, setLugar] = useState<TipoLugar>('campus')
   const [zona, setZona] = useState('')
   const [referencia, setReferencia] = useState('')
-  const [punto, setPunto] = useState<GeoPoint>(CAMPUS.find((c) => c.id === (usuario?.campus ?? CAMPUS[0].id))!.punto)
+  const [punto, setPunto] = useState<GeoPoint>(puntoBase('campus'))
   const [whatsapp, setWhatsapp] = useState('')
   const [instagram, setInstagram] = useState('')
   const [preferido, setPreferido] = useState<ContactChannel>('whatsapp')
   const [dias, setDias] = useState(MAX_DIAS_VIGENCIA)
   const [acepta, setAcepta] = useState(false)
 
-  const zonasCampus = CAMPUS.find((c) => c.id === campus)?.zonas ?? []
+  const zonasDisponibles = LUGARES.find((l) => l.tipo === lugar)?.zonas ?? []
   const esForo = type === 'perdido'
 
   // Mismo cálculo que corre al publicar: se muestra antes para que no sorprenda.
@@ -119,7 +119,7 @@ export const Publicar = () => {
         categoria,
         estadoArticulo: type === 'venta' ? estadoArticulo : undefined,
         imagenes,
-        ubicacion: { campus, zona, referencia: referencia.trim() || undefined, punto },
+        ubicacion: { tipo: lugar, zona, referencia: referencia.trim() || undefined, punto },
         contacto: {
           nombre: usuario.nombre,
           carrera: usuario.carrera,
@@ -345,26 +345,40 @@ export const Publicar = () => {
         {paso === 2 && (
           <div className="columna" style={{ gap: 18 }}>
             <div className="campo">
-              <label htmlFor="campus">Campus o sector</label>
-              <select
-                id="campus"
-                className="selector"
-                value={campus}
-                onChange={(e) => {
-                  const nuevo = e.target.value as Campus
-                  setCampus(nuevo)
-                  setZona('')
-                  setPunto(CAMPUS.find((c) => c.id === nuevo)!.punto)
-                }}
-              >
-                {CAMPUS.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
-              </select>
+              <span className="campo-titulo">¿Dónde lo entregas?</span>
+              <div className="opciones" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                {LUGARES.map((l) => (
+                  <button
+                    key={l.tipo}
+                    type="button"
+                    className="opcion"
+                    aria-pressed={lugar === l.tipo}
+                    onClick={() => {
+                      setLugar(l.tipo)
+                      setZona('')
+                      setPunto(puntoBase(l.tipo))
+                    }}
+                  >
+                    <span className="opcion-icono">
+                      <Icono nombre={l.tipo === 'campus' ? 'mapa' : 'pin'} tam={19} />
+                    </span>
+                    <span>
+                      <span className="opcion-titulo">{l.etiqueta}</span>
+                      <span className="opcion-texto">
+                        {l.tipo === 'campus'
+                          ? 'Se entrega dentro del Campus Central UCN.'
+                          : 'En algún punto de Antofagasta.'}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="campo">
               <span className="campo-titulo">Punto de encuentro sugerido</span>
               <div className="fila-envuelve">
-                {zonasCampus.map((z) => (
+                {zonasDisponibles.map((z) => (
                   <button key={z} type="button" className="chip" aria-pressed={zona === z} onClick={() => setZona(z)}>
                     <Icono nombre="pin" tam={13} /> {z}
                   </button>
@@ -450,7 +464,10 @@ export const Publicar = () => {
                   <h3 className="tarjeta-titulo recorte-2">{titulo || 'Título de tu aviso'}</h3>
                   <div className="tarjeta-meta">
                     <Icono nombre="pin" tam={13} />
-                    <span>{zona || 'Punto por definir'} · {campus.split('—')[0].trim()}</span>
+                    <span>
+                      {zona || 'Punto por definir'}
+                      {lugar === 'fuera' && ' · fuera del campus'}
+                    </span>
                   </div>
                 </div>
               </div>

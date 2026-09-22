@@ -25,6 +25,7 @@ import type {
   PostType,
   Report,
   SolicitudPlan,
+  TipoLugar,
   User,
 } from './types'
 
@@ -40,7 +41,7 @@ const leer = (): Database => {
     const crudo = localStorage.getItem(CLAVE)
     if (crudo) {
       const parsed = JSON.parse(crudo) as Database
-      if (parsed.version === 4) {
+      if (parsed.version === 5) {
         cache = parsed
         return cache
       }
@@ -158,7 +159,9 @@ export const listarUsuarios = () => leer().usuarios
 
 export interface FiltrosPost {
   tipos?: PostType[]
-  campus?: string[]
+  /** 'campus' o 'fuera': dónde se coordina la entrega. */
+  lugares?: TipoLugar[]
+  zonas?: string[]
   categorias?: string[]
   busqueda?: string
   precioMax?: number
@@ -196,7 +199,8 @@ export const filtrarPosts = (posts: Post[], f: FiltrosPost = {}): Post[] => {
   const filtrados = posts.filter((p) => {
     if (!estados.includes(p.status)) return false
     if (f.tipos?.length && !f.tipos.includes(p.type)) return false
-    if (f.campus?.length && !f.campus.includes(p.ubicacion.campus)) return false
+    if (f.lugares?.length && !f.lugares.includes(p.ubicacion.tipo)) return false
+    if (f.zonas?.length && !f.zonas.includes(p.ubicacion.zona)) return false
     if (f.categorias?.length && !f.categorias.includes(p.categoria)) return false
     if (f.autorId && p.autorId !== f.autorId) return false
     if (f.lostKind && p.lostKind !== f.lostKind) return false
@@ -207,7 +211,7 @@ export const filtrarPosts = (posts: Post[], f: FiltrosPost = {}): Post[] => {
     if (f.precioMax !== undefined && (p.precio ?? 0) > f.precioMax) return false
     if (q) {
       const heno = normalizar(
-        `${p.titulo} ${p.descripcion} ${p.categoria} ${p.ubicacion.campus} ${p.ubicacion.zona} ${p.contacto.carrera}`,
+        `${p.titulo} ${p.descripcion} ${p.categoria} ${p.ubicacion.zona} ${p.contacto.carrera}`,
       )
       if (!q.split(/\s+/).every((t) => heno.includes(t))) return false
     }

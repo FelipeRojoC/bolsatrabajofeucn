@@ -97,16 +97,14 @@ export const agruparPorCategoria = (posts: Post[], limite = 8): Categoria[] => {
     .slice(0, limite)
 }
 
-/** "Antofagasta — Casa Central" no cabe en el eje: se usa el nombre corto. */
-const nombreCorto = (campus: string) => campus.split('—').pop()?.trim() ?? campus
-
-export const agruparPorCampus = (posts: Post[]): Categoria[] => {
+/** Dónde se propone juntarse la gente: el dato útil ahora que hay un solo campus. */
+export const agruparPorZona = (posts: Post[], limite = 8): Categoria[] => {
   const mapa = new Map<string, number>()
-  for (const p of posts) {
-    const clave = nombreCorto(p.ubicacion.campus)
-    mapa.set(clave, (mapa.get(clave) ?? 0) + 1)
-  }
-  return [...mapa.entries()].map(([clave, valor]) => ({ clave, valor })).sort((a, b) => b.valor - a.valor)
+  for (const p of posts) mapa.set(p.ubicacion.zona, (mapa.get(p.ubicacion.zona) ?? 0) + 1)
+  return [...mapa.entries()]
+    .map(([clave, valor]) => ({ clave, valor }))
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, limite)
 }
 
 /**

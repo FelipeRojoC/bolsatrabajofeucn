@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import * as api from '../lib/api'
-import { CAMPUS, PLANES, RUBROS_EMPRENDIMIENTO } from '../lib/constants'
+import { PLANES, RUBROS_EMPRENDIMIENTO } from '../lib/constants'
 import { compacto, fechaLarga, formatearPrecio, handleInstagram, linkInstagram, linkWhatsApp, normalizar } from '../lib/format'
-import type { Campus, Emprendimiento, PlanId } from '../lib/types'
+import type { Emprendimiento, PlanId } from '../lib/types'
 import { Icono } from '../components/Iconos'
 import { Modal, Nota, Vacio } from '../components/UI'
 import { useApp } from '../state/contexto'
@@ -158,7 +158,6 @@ export const Emprendimientos = () => {
             <span className="fila-envuelve" style={{ gap: 8 }}>
               <span className="etiqueta etiqueta-contorno">{actual.rubro}</span>
               <span className={`etiqueta${actual.plan === 'pro' ? ' etiqueta-marca' : ''}`}>Plan {PLAN_ETIQUETA[actual.plan]}</span>
-              <span className="etiqueta etiqueta-contorno">{actual.campus.split('—')[0].trim()}</span>
             </span>
           }
         >
@@ -284,7 +283,6 @@ const RegistroEmprendimiento = ({
   const [whatsapp, setWhatsapp] = useState('')
   const [plan, setPlan] = useState<PlanId>('emprendedor')
   const [meses, setMeses] = useState(3)
-  const [campus, setCampus] = useState<Campus>(usuario?.campus ?? CAMPUS[0].id)
   const [enviando, setEnviando] = useState(false)
 
   const planSel = PLANES.find((p) => p.id === plan)!
@@ -305,7 +303,6 @@ const RegistroEmprendimiento = ({
         duenoId: usuario.id,
         dueno: usuario.nombre,
         carrera: usuario.carrera,
-        campus,
         plan,
       })
       if (plan !== 'vitrina') {
@@ -398,13 +395,6 @@ const RegistroEmprendimiento = ({
               <label htmlFor="e-wa">WhatsApp</label>
               <input id="e-wa" className="entrada" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+56 9 1234 5678" />
             </div>
-          </div>
-
-          <div className="campo">
-            <label htmlFor="e-campus">Campus base</label>
-            <select id="e-campus" className="selector" value={campus} onChange={(e) => setCampus(e.target.value as Campus)}>
-              {CAMPUS.map((c) => <option key={c.id} value={c.id}>{c.id}</option>)}
-            </select>
           </div>
 
           <div className="campo">

@@ -161,7 +161,7 @@ export const Moderacion = () => {
                     </div>
 
                     <div className="mini muy-tenue fila" style={{ gap: 6 }}>
-                      <Icono nombre="pin" tam={13} /> {p.ubicacion.zona} · {p.ubicacion.campus}
+                      <Icono nombre="pin" tam={13} /> {p.ubicacion.zona}{p.ubicacion.tipo === 'fuera' ? ' · fuera del campus' : ''}
                     </div>
 
                     {p.banderas.length > 0 && (
@@ -407,7 +407,7 @@ const FilaEmprendimiento = ({ emp, alDecidir }: { emp: Emprendimiento; alDecidir
       </div>
       <p className="chico tenue recorte-3" style={{ margin: 0 }}>{emp.descripcion}</p>
       <div className="mini muy-tenue">
-        {emp.dueno} · {emp.carrera} · {emp.campus}
+        {emp.dueno} · {emp.carrera}
         {emp.instagram && ` · @${emp.instagram}`}
       </div>
     </div>

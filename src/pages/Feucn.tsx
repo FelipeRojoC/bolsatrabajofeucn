@@ -25,7 +25,7 @@ const HITOS = [
   { fecha: 'Abril', titulo: 'Elecciones de centros de alumnos', texto: 'Acompañamiento a los procesos eleccionarios de cada carrera.' },
   { fecha: 'Junio', titulo: 'Rendición de cuentas del primer semestre', texto: 'Se presenta el presupuesto ejecutado, incluidos los ingresos del directorio de emprendimientos.' },
   { fecha: 'Agosto', titulo: 'Feria de emprendimientos UCN', texto: 'Los emprendimientos del directorio montan stands en el campus durante una semana.' },
-  { fecha: 'Octubre', titulo: 'Semana de la universidad', texto: 'Actividades culturales y deportivas en Antofagasta y Coquimbo.' },
+  { fecha: 'Octubre', titulo: 'Semana de la universidad', texto: 'Actividades culturales y deportivas durante toda la semana en el campus.' },
   { fecha: 'Diciembre', titulo: 'Asamblea de cierre', texto: 'Balance del año, rendición final y propuestas para el período siguiente.' },
 ]
 
@@ -63,10 +63,10 @@ export const Feucn = () => (
         <span className="etiqueta etiqueta-marca" style={{ marginBottom: 16 }}>
           <Icono nombre="usuarios" tam={13} /> Federación de Estudiantes UCN
         </span>
-        <h1>Somos la organización que representa a los estudiantes de la UCN.</h1>
+        <h1>Somos la organización que representa a los estudiantes de la UCN Antofagasta.</h1>
         <p className="heroe-bajada">
-          Antofagasta y Coquimbo, pregrado y postgrado. La FEUCN articula a los centros de alumnos, negocia con la
-          universidad y sostiene proyectos como esta bolsa de trabajo.
+          Pregrado y postgrado del Campus Central de Antofagasta. La FEUCN articula a los centros de alumnos, negocia
+          con la universidad y sostiene proyectos como esta bolsa de trabajo.
         </p>
         <div className="heroe-acciones">
           <a href="#contacto" className="btn btn-primario btn-grande"><Icono nombre="correo" tam={18} /> Contactar a la federación</a>
@@ -207,17 +207,17 @@ export const Feucn = () => (
         <div className="seccion-titulo">
           <div>
             <h2>Dónde encontrarnos</h2>
-            <p>La oficina de la federación está en Casa Central. Ahí también se reciben los objetos encontrados.</p>
+            <p>La oficina de la federación está en el Campus Central. Ahí también se reciben los objetos encontrados.</p>
           </div>
         </div>
         <div className="detalle-rejilla">
-          <Mapa centro={CAMPUS[0].punto} zoom={16} puntos={[{ id: 'feucn', punto: CAMPUS[0].punto, color: 'var(--marca)', titulo: 'Oficina FEUCN — Casa Central' }]} />
+          <Mapa centro={CAMPUS.punto} zoom={16} puntos={[{ id: 'feucn', punto: CAMPUS.punto, color: 'var(--marca)', titulo: 'Oficina FEUCN — Campus Central' }]} />
           <aside className="columna" style={{ gap: 14 }}>
             <div className="panel panel-relleno">
               <div className="mayus tenue" style={{ marginBottom: 6 }}>Oficina</div>
-              <div className="dato"><span className="dato-lbl">Dirección</span><span className="dato-val">Casa Central, Av. Angamos 0610, Antofagasta</span></div>
+              <div className="dato"><span className="dato-lbl">Dirección</span><span className="dato-val">Campus Central, Av. Angamos 0610, Antofagasta</span></div>
               <div className="dato"><span className="dato-lbl">Horario</span><span className="dato-val">Lunes a viernes, 10:00 a 17:00</span></div>
-              <div className="dato"><span className="dato-lbl">Coquimbo</span><span className="dato-val">Campus Guayacán, edificio de servicios estudiantiles</span></div>
+              <div className="dato"><span className="dato-lbl">Objetos encontrados</span><span className="dato-val">Se reciben y entregan en la misma oficina</span></div>
             </div>
             <div className="panel panel-relleno columna" style={{ gap: 8 }}>
               <div className="mayus tenue">Escríbenos</div>
