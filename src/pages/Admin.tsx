@@ -4,6 +4,7 @@ import * as api from '../lib/api'
 import { Icono } from '../components/Iconos'
 import { Nota } from '../components/UI'
 import { LogoFeucn } from '../components/Logo'
+import { hayBackend } from '../lib/supabase'
 import { useApp } from '../state/contexto'
 
 /**
@@ -50,7 +51,7 @@ export const Admin = () => {
         </div>
 
         <div className="campo">
-          <label htmlFor="a-usuario">Usuario</label>
+          <label htmlFor="a-usuario">Usuario o correo</label>
           <input
             id="a-usuario"
             className="entrada"
@@ -60,6 +61,7 @@ export const Admin = () => {
             onChange={(e) => setUsuario(e.target.value)}
             aria-invalid={Boolean(error)}
           />
+          {hayBackend() && <span className="campo-ayuda">La cuenta que creó la federación en Supabase.</span>}
         </div>
 
         <div className="campo">
