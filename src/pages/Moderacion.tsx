@@ -10,9 +10,10 @@ import { Cifra, GraficoLineas, Medidor } from '../components/Graficos'
 import { DetalleAviso } from '../components/DetalleAviso'
 import { PanelFerias } from '../components/PanelFerias'
 import { IngresoPanel } from '../components/IngresoPanel'
+import { PanelCuentas } from '../components/PanelCuentas'
 import { useApp } from '../state/contexto'
 
-type Pestana = 'cola' | 'reportes' | 'emprendimientos' | 'suscripciones' | 'ferias' | 'actividad'
+type Pestana = 'cola' | 'reportes' | 'emprendimientos' | 'suscripciones' | 'ferias' | 'cuentas' | 'actividad'
 
 export const Moderacion = () => {
   const { usuario, esModerador, esAdmin, revision, avisar } = useApp()
@@ -67,6 +68,9 @@ export const Moderacion = () => {
     { id: 'emprendimientos', texto: 'Emprendimientos', cuenta: d.empsPendientes.length },
     { id: 'suscripciones', texto: 'Suscripciones', cuenta: d.solicitudes.length },
     { id: 'ferias', texto: 'Ferias' },
+    // Suspender y eliminar cuentas es decisión de la mesa directiva, no de
+    // quien modera avisos: la pestaña solo existe para el rol admin.
+    ...(esAdmin ? [{ id: 'cuentas' as const, texto: 'Cuentas' }] : []),
     { id: 'actividad', texto: 'Actividad' },
   ]
 
@@ -240,6 +244,9 @@ export const Moderacion = () => {
 
         {/* ── Ferias ────────────────────────────────────────────────── */}
         {pestana === 'ferias' && <PanelFerias />}
+
+        {/* ── Cuentas ───────────────────────────────────────────────── */}
+        {pestana === 'cuentas' && esAdmin && <PanelCuentas />}
 
         {/* ── Actividad ─────────────────────────────────────────────── */}
         {pestana === 'actividad' && (

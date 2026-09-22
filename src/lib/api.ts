@@ -30,6 +30,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { crearBaseDemo } from './seed'
 import type {
   AnalyticsEvent,
+  ContenidoBorrado,
+  CuentaPanel,
   Database,
   Emprendimiento,
   EventKind,
@@ -277,13 +279,16 @@ const activarSesion = (user: User) => {
   notificar()
 }
 
-const traerPerfil = async (sb: SupabaseClient, userId: string): Promise<User | null> => {
+const traerPerfil = async (
+  sb: SupabaseClient,
+  userId: string,
+): Promise<(User & { suspendido: boolean }) | null> => {
   const { data } = await sb
     .from(TABLAS.perfiles)
-    .select('nombre, correo, carrera, rol, avatar')
+    .select('nombre, correo, carrera, rol, avatar, suspendido')
     .eq('id', userId)
     .single()
-  return data ? perfilAUsuario(userId, data) : null
+  return data ? { ...perfilAUsuario(userId, data), suspendido: Boolean(data.suspendido) } : null
 }
 
 export interface DatosRegistro {
@@ -370,11 +375,19 @@ export const iniciarSesionEstudiante = async (
     if (msg.includes('not confirmed')) {
       return { ok: false, motivo: 'Todavía no confirmas tu correo. Revisa la bandeja de entrada.' }
     }
+    // banned_until hace que Supabase rechace el ingreso de una cuenta suspendida.
+    if (msg.includes('banned') || msg.includes('suspend')) {
+      return { ok: false, motivo: 'Esta cuenta está suspendida. Escribe a bienestar@feucn.cl si crees que es un error.' }
+    }
     return { ok: false, motivo: 'Correo o contraseña incorrectos.' }
   }
 
   const user = await traerPerfil(sb, data.user.id)
   if (!user) return { ok: false, motivo: 'Tu cuenta existe pero le falta el perfil. Avisa a la federación.' }
+  if (user.suspendido) {
+    await sb.auth.signOut()
+    return { ok: false, motivo: 'Esta cuenta está suspendida. Escribe a bienestar@feucn.cl si crees que es un error.' }
+  }
 
   activarSesion(user)
   await sincronizar()
@@ -393,7 +406,13 @@ export const restaurarSesion = async (): Promise<User | null> => {
   const { data } = await sb.auth.getSession()
   if (!data.session?.user) return null
   const user = await traerPerfil(sb, data.session.user.id)
-  if (user) activarSesion(user)
+  if (!user) return null
+  // Si la suspendieron mientras tenía la sesión abierta, se corta al volver.
+  if (user.suspendido) {
+    await sb.auth.signOut()
+    return null
+  }
+  activarSesion(user)
   return user
 }
 
@@ -504,6 +523,79 @@ export const cambiarClaveConCodigo = async (
   activarSesion(user)
   await sincronizar()
   return { ok: true, user }
+}
+
+/* ── Cuentas (solo administración) ───────────────────────────────────────
+   Todo pasa por funciones de la base que comprueban el rol por dentro: la
+   interfaz decide qué mostrar, la base decide qué se puede hacer.            */
+
+const filaACuenta = (f: Record<string, unknown>): CuentaPanel => ({
+  id: String(f.id),
+  nombre: String(f.nombre ?? ''),
+  correo: String(f.correo ?? ''),
+  carrera: String(f.carrera ?? '—'),
+  role: (f.rol as User['role']) ?? 'estudiante',
+  avatar: String(f.avatar ?? '#0b7a54'),
+  creadoEn: String(f.creado_en ?? ''),
+  suspendido: Boolean(f.suspendido),
+  suspendidoEn: (f.suspendido_en as string) ?? undefined,
+  motivoSuspension: (f.motivo_suspension as string) ?? undefined,
+  ultimoIngreso: (f.ultimo_ingreso as string) ?? undefined,
+  correoConfirmado: Boolean(f.correo_confirmado),
+  avisos: Number(f.avisos ?? 0),
+  avisosActivos: Number(f.avisos_activos ?? 0),
+  respuestas: Number(f.respuestas ?? 0),
+  emprendimientos: Number(f.emprendimientos ?? 0),
+})
+
+export const listarCuentas = async (): Promise<CuentaPanel[]> => {
+  const sb = await supabase()
+  if (!sb) return []
+  const { data, error } = await sb.rpc('usuarios_panel')
+  if (error || !data) return []
+  return (data as Record<string, unknown>[]).map(filaACuenta)
+}
+
+const mensajeRpc = (error: { message: string }): string => {
+  // Las funciones lanzan excepciones con texto pensado para mostrarse tal cual.
+  const limpio = error.message.replace(/^.*?:\s*/, '').trim()
+  return limpio || 'No se pudo completar la acción.'
+}
+
+export type ResultadoCuenta =
+  | { ok: true; borrado: ContenidoBorrado }
+  | { ok: false; motivo: string }
+
+/**
+ * Suspende una cuenta y retira del sitio todo lo que publicó.
+ *
+ * La cuenta no se borra a propósito: el correo queda tomado, así que esa
+ * persona no puede registrarse de nuevo y entrar como si nada.
+ */
+export const suspenderCuenta = async (userId: string, motivo?: string): Promise<ResultadoCuenta> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+  const { data, error } = await sb.rpc('suspender_cuenta', { p_id: userId, p_motivo: motivo ?? null })
+  if (error) return { ok: false, motivo: mensajeRpc(error) }
+  await sincronizar()
+  return { ok: true, borrado: data as ContenidoBorrado }
+}
+
+export const reactivarCuenta = async (userId: string): Promise<ResultadoSimple> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+  const { error } = await sb.rpc('reactivar_cuenta', { p_id: userId })
+  return error ? { ok: false, motivo: mensajeRpc(error) } : { ok: true }
+}
+
+/** Borra la cuenta y su contenido. No se puede deshacer. */
+export const eliminarCuenta = async (userId: string): Promise<ResultadoCuenta> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+  const { data, error } = await sb.rpc('eliminar_cuenta', { p_id: userId })
+  if (error) return { ok: false, motivo: mensajeRpc(error) }
+  await sincronizar()
+  return { ok: true, borrado: data as ContenidoBorrado }
 }
 
 /** Para que la interfaz pueda avisar cuando falta configurar la base. */

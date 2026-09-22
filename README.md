@@ -106,6 +106,38 @@ El campo del código usa `autocomplete="one-time-code"`, así que en el teléfon
 el sistema lo ofrece pegado apenas llega el correo, y se envía solo al completar
 los seis dígitos.
 
+### Moderar cuentas
+
+La pestaña **Cuentas** del panel lista a todos los registrados, con buscador por
+nombre, correo o carrera, y filtros por estado. De cada cuenta se ve cuánto
+publicó, cuándo se registró y cuándo entró por última vez.
+
+Dos acciones, y la diferencia importa:
+
+| | Suspender | Eliminar |
+|---|---|---|
+| La cuenta | Queda registrada, sin acceso | Desaparece |
+| El correo | Sigue tomado: no puede volver a registrarse | Queda libre |
+| Su contenido | Se borra | Se borra |
+| ¿Se deshace? | Sí, se reactiva — pero el contenido no vuelve | No |
+
+En los dos casos se retira **todo** lo que esa persona publicó: avisos,
+respuestas del foro, emprendimientos, postulaciones a ferias y los reportes que
+hizo. Los reportes y respuestas que colgaban de sus avisos se van con ellos, por
+las llaves foráneas en cascada.
+
+Para bloquear a alguien de verdad, **suspender** es lo correcto: eliminar le
+deja el correo libre para registrarse de nuevo. El diálogo lo dice al momento
+de elegir, y eliminar pide escribir `ELIMINAR` para que no se haga por inercia.
+
+La suspensión usa `banned_until` de Supabase Auth, así que el bloqueo es del
+servidor de autenticación y no de la interfaz. Si la persona tenía una sesión
+abierta, se le corta en cuanto vuelve a la pestaña.
+
+Las cuentas de administración no se pueden suspender ni eliminar desde el
+panel, y nadie puede hacerlo consigo mismo. La pestaña solo existe para el rol
+`admin`: quien modera avisos no decide sobre las cuentas.
+
 ## Acceso del equipo
 
 El panel vive en **`/adminfeucn`** y se llega escribiendo esa dirección: no hay
@@ -183,7 +215,9 @@ Menú lateral → **SQL Editor** → *New query*. Pega y ejecuta, en este orden:
    escalada de privilegios que dejaba a cualquier cuenta nombrarse administradora.
 3. `supabase/04-cuentas-estudiantes.sql` — deja que los estudiantes se
    registren solos, pero únicamente con correo institucional UCN.
-4. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
+4. `supabase/05-gestion-usuarios.sql` — el panel de cuentas: suspender,
+   reactivar y eliminar, con el borrado del contenido asociado.
+5. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
    para recorrer el sitio con contenido. Se borra con dos `delete` que están
    comentados al principio del archivo.
 
@@ -259,6 +293,7 @@ Lo que se cerró, y cómo comprobarlo:
 | **Ventanas robadas** | Todo enlace externo lleva `rel="noopener noreferrer"`. |
 | **Cuentas falsas** | Registrarse exige correo institucional UCN, validado por un trigger en la base, y confirmarlo con un código que llega a ese correo. El rol siempre nace como `estudiante`. |
 | **Suplantación** | El correo de un perfil no se puede editar: es la identidad de la cuenta y vive en `auth.users`. |
+| **Moderación sin residuos** | Suspender o eliminar una cuenta retira todo su contenido en una sola transacción del servidor, así que no quedan avisos huérfanos de alguien ya expulsado. |
 | **Dependencias** | `npm audit` en cero. |
 
 Lo que **no** está cubierto y depende de la configuración del proyecto:

@@ -189,6 +189,29 @@ export interface User {
   avatar: string
 }
 
+/** Una cuenta vista desde el panel, con cuánto tiene publicado. */
+export interface CuentaPanel extends User {
+  creadoEn: string
+  suspendido: boolean
+  suspendidoEn?: string
+  motivoSuspension?: string
+  ultimoIngreso?: string
+  correoConfirmado: boolean
+  avisos: number
+  avisosActivos: number
+  respuestas: number
+  emprendimientos: number
+}
+
+/** Lo que se retiró del sitio al suspender o eliminar una cuenta. */
+export interface ContenidoBorrado {
+  avisos: number
+  respuestas: number
+  emprendimientos: number
+  postulaciones: number
+  reportes: number
+}
+
 export interface SolicitudPlan {
   id: string
   emprendimientoId: string
