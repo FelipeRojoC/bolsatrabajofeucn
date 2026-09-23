@@ -778,3 +778,66 @@
   font-variant-numeric: tabular-nums;
 }
 .entrada-codigo::placeholder { letter-spacing: 0.45em; font-weight: 400; }
+
+/* ── Marco destacado ────────────────────────────────────────────────────── */
+/* Lo que distingue a un aviso de emprendimiento con plan pagado. El borde es
+   un degradado cónico que gira despacio bajo la tarjeta; el relleno interior
+   tapa el centro y deja ver solo los 2px del contorno.                       */
+
+@property --giro-vitral {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.tarjeta.destacada {
+  position: relative;
+  border-color: transparent;
+  background:
+    linear-gradient(var(--superficie), var(--superficie)) padding-box,
+    conic-gradient(
+      from var(--giro-vitral),
+      var(--vitral-1), var(--vitral-2), var(--vitral-3),
+      var(--vitral-4), var(--vitral-5), var(--vitral-6),
+      var(--vitral-7), var(--vitral-1)
+    ) border-box;
+  border: 2px solid transparent;
+  animation: girar-vitral 6s linear infinite;
+}
+.tarjeta.destacada:hover { box-shadow: var(--sombra-3); }
+
+@keyframes girar-vitral {
+  to { --giro-vitral: 360deg; }
+}
+
+/* Sin @property el ángulo no se puede animar, así que el degradado se queda
+   quieto: el marco igual se ve y se distingue. */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
+  .tarjeta.destacada { border-color: var(--vitral-4); background: var(--superficie); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta.destacada { animation: none; }
+}
+
+/* Distintivo dentro de la tarjeta */
+.cinta-destacado {
+  position: absolute; top: 10px; right: 46px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--superficie) 92%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 0.68rem; font-weight: 700;
+  box-shadow: var(--sombra-1);
+}
+.cinta-destacado .glifo-vitral {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: conic-gradient(var(--vitral-1), var(--vitral-3), var(--vitral-5), var(--vitral-6), var(--vitral-1));
+  flex: none;
+}
+
+/* Vista previa del marco en el formulario */
+.muestra-vitral {
+  height: 8px; border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--vitral-1), var(--vitral-2), var(--vitral-3), var(--vitral-4), var(--vitral-5), var(--vitral-6));
+}

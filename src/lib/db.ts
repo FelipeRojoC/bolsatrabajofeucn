@@ -69,6 +69,8 @@ export const filaAPost = (f: Fila): Post => ({
   },
   riesgo: f.riesgo ?? 0,
   banderas: f.banderas ?? [],
+  destacado: Boolean(f.destacado),
+  emprendimientoId: f.emprendimiento_id ?? undefined,
   lostKind: f.lost_kind ?? undefined,
   resuelto: f.resuelto ?? false,
   respuestas: (f.respuestas_foro ?? []).map((r: Fila) => ({
@@ -219,6 +221,8 @@ export const postAFila = (p: Omit<Post, 'id'>): Fila => ({
   banderas: p.banderas,
   lost_kind: p.lostKind ?? null,
   resuelto: p.resuelto ?? false,
+  // El servidor decide si corresponde; acá solo se pide.
+  destacado: p.destacado ?? false,
 })
 
 export const feriaAFila = (f: Omit<Feria, 'id' | 'creadoEn'>): Fila => ({

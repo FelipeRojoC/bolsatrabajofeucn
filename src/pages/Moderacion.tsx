@@ -3,7 +3,7 @@ import * as api from '../lib/api'
 import { MOTIVOS_RECHAZO, PLANES, TIPOS } from '../lib/constants'
 import { fechaHora, formatearNumero, formatearPrecio, hace, porcentaje } from '../lib/format'
 import { calcularKPIs, serieDiaria } from '../lib/analytics'
-import type { Emprendimiento, Post, Report, SolicitudPlan } from '../lib/types'
+import type { Post, Report, SolicitudPlan } from '../lib/types'
 import { Icono } from '../components/Iconos'
 import { Avatar, Modal, Nota, Vacio } from '../components/UI'
 import { Cifra, GraficoLineas, Medidor } from '../components/Graficos'
@@ -11,6 +11,7 @@ import { DetalleAviso } from '../components/DetalleAviso'
 import { PanelFerias } from '../components/PanelFerias'
 import { IngresoPanel } from '../components/IngresoPanel'
 import { PanelCuentas } from '../components/PanelCuentas'
+import { PanelEmprendimientos } from '../components/PanelEmprendimientos'
 import { useApp } from '../state/contexto'
 
 type Pestana = 'cola' | 'reportes' | 'emprendimientos' | 'suscripciones' | 'ferias' | 'cuentas' | 'actividad'
@@ -204,20 +205,7 @@ export const Moderacion = () => {
         )}
 
         {/* ── Emprendimientos ───────────────────────────────────────── */}
-        {pestana === 'emprendimientos' && (
-          d.empsPendientes.length === 0 ? (
-            <Vacio icono="tienda" titulo="Nada pendiente en el directorio" texto="Todos los emprendimientos enviados ya fueron revisados." />
-          ) : (
-            <div className="cola">
-              {d.empsPendientes.map((e) => (
-                <FilaEmprendimiento key={e.id} emp={e} alDecidir={async (accion) => {
-                  await api.moderarEmprendimiento(e.id, accion, { revisadoPor: usuario!.nombre })
-                  avisar(accion === 'aprobar' ? 'Emprendimiento publicado' : 'Emprendimiento rechazado', 'ok')
-                }} />
-              ))}
-            </div>
-          )
-        )}
+        {pestana === 'emprendimientos' && <PanelEmprendimientos />}
 
         {/* ── Suscripciones ─────────────────────────────────────────── */}
         {pestana === 'suscripciones' && (
@@ -391,35 +379,6 @@ const FilaReporte = ({ reporte, alVer, alResolver }: { reporte: Report; alVer: (
     </article>
   )
 }
-
-const FilaEmprendimiento = ({ emp, alDecidir }: { emp: Emprendimiento; alDecidir: (a: 'aprobar' | 'rechazar') => void }) => (
-  <article className="cola-item riesgo-bajo">
-    <div className="columna" style={{ gap: 10 }}>
-      <div className="fila">
-        <span className="emp-logo" style={{ background: emp.logo, width: 42, height: 42, fontSize: '0.9rem' }}>
-          {emp.nombre.slice(0, 2).toUpperCase()}
-        </span>
-        <div>
-          <h3 style={{ fontSize: '1rem' }}>{emp.nombre}</h3>
-          <span className="mini tenue">{emp.rubro} · plan {emp.plan}</span>
-        </div>
-      </div>
-      <p className="chico tenue recorte-3" style={{ margin: 0 }}>{emp.descripcion}</p>
-      <div className="mini muy-tenue">
-        {emp.dueno} · {emp.carrera}
-        {emp.instagram && ` · @${emp.instagram}`}
-      </div>
-    </div>
-    <div className="cola-acciones">
-      <button className="btn btn-ok btn-bloque" onClick={() => alDecidir('aprobar')}>
-        <Icono nombre="visto" tam={16} /> Publicar ficha
-      </button>
-      <button className="btn btn-peligro btn-bloque" onClick={() => alDecidir('rechazar')}>
-        <Icono nombre="cerrar" tam={16} /> Rechazar
-      </button>
-    </div>
-  </article>
-)
 
 const FilaSolicitud = ({ solicitud, alDecidir }: { solicitud: SolicitudPlan; alDecidir: (a: 'confirmar' | 'rechazar') => void }) => {
   const plan = PLANES.find((p) => p.id === solicitud.plan)!

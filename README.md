@@ -106,6 +106,36 @@ El campo del código usa `autocomplete="one-time-code"`, así que en el teléfon
 el sistema lo ofrece pegado apenas llega el correo, y se envía solo al completar
 los seis dígitos.
 
+### Avisos destacados
+
+Los planes Emprendedor y Pro incluyen que los avisos de ese emprendimiento
+salgan con un **marco de colores** que gira, para que resalten en el feed. Es lo
+que se está pagando, así que quién puede usarlo lo decide el servidor:
+
+1. En el panel → **Emprendimientos**, se enlaza la ficha con el **correo** de
+   quien la lleva. La cuenta tiene que existir: si esa persona aún no se
+   registró, primero crea su cuenta en `/entrar`.
+2. Con la ficha aprobada, plan pagado y suscripción al día, a esa persona le
+   aparece al publicar la casilla **"Mostrarlo con el marco de colores"**, con
+   una vista previa de cómo va a quedar.
+3. Al enviar el aviso, un trigger vuelve a comprobar las tres condiciones. Si
+   alguna no se cumple —por ejemplo, la suscripción venció entre que abrió el
+   formulario y envió— el aviso se publica igual, sin marco: la publicación
+   importa más que el adorno.
+
+El marco se apaga solo cuando la suscripción vence, en el mismo cron que
+despublica los avisos vencidos. Quitar el enlace de una cuenta también deja sus
+avisos en la fila común.
+
+La columna `destacado` tiene revocada la escritura desde el cliente y el trigger
+de edición la congela, así que nadie se destaca por su cuenta ni después de
+publicar.
+
+Técnicamente es un `conic-gradient` animado con `@property` sobre el borde, con
+el relleno en `padding-box` tapando el centro. Donde el navegador no soporte
+`@property`, el marco se queda quieto pero se ve igual, y con
+`prefers-reduced-motion` no gira.
+
 ### Moderar cuentas
 
 La pestaña **Cuentas** del panel lista a todos los registrados, con buscador por
@@ -217,7 +247,9 @@ Menú lateral → **SQL Editor** → *New query*. Pega y ejecuta, en este orden:
    registren solos, pero únicamente con correo institucional UCN.
 4. `supabase/05-gestion-usuarios.sql` — el panel de cuentas: suspender,
    reactivar y eliminar, con el borrado del contenido asociado.
-5. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
+5. `supabase/06-avisos-destacados.sql` — enlaza emprendimientos con cuentas y
+   habilita el marco destacado de los planes pagados.
+6. `supabase/03-datos-ejemplo.sql` — opcional, carga una feria y unos avisos
    para recorrer el sitio con contenido. Se borra con dos `delete` que están
    comentados al principio del archivo.
 

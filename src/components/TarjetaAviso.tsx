@@ -36,7 +36,7 @@ export const TarjetaAviso = ({ post, alAbrir, vistaAutor }: Props) => {
 
   return (
     <article
-      className={`tarjeta${inactivo ? ' atenuada' : ''}`}
+      className={`tarjeta${inactivo ? ' atenuada' : ''}${post.destacado ? ' destacada' : ''}`}
       onClick={() => alAbrir(post)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -59,6 +59,13 @@ export const TarjetaAviso = ({ post, alAbrir, vistaAutor }: Props) => {
           <Icono nombre={post.type} tam={13} style={{ color: tipo.color }} />
           {post.type === 'perdido' ? (post.lostKind === 'encontrado' ? 'Encontrado' : 'Perdido') : tipo.label}
         </span>
+
+        {post.destacado && (
+          <span className="cinta-destacado" title="Emprendimiento con plan pagado">
+            <span className="glifo-vitral" aria-hidden="true" />
+            Emprendimiento
+          </span>
+        )}
 
         {!vistaAutor && (
           <button

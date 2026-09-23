@@ -103,6 +103,12 @@ export interface Post {
   /** Puntaje automático 0–100 calculado al publicar; alimenta la cola. */
   riesgo: number
   banderas: string[]
+  /**
+   * Marco de colores de los planes pagados. Lo decide el servidor: el cliente
+   * solo pide, y la base comprueba que haya suscripción vigente.
+   */
+  destacado?: boolean
+  emprendimientoId?: string
   /** Solo para el foro de objetos perdidos. */
   lostKind?: LostKind
   resuelto?: boolean
@@ -201,6 +207,14 @@ export interface CuentaPanel extends User {
   avisosActivos: number
   respuestas: number
   emprendimientos: number
+}
+
+/** El emprendimiento que habilita el marco destacado, si la cuenta tiene uno. */
+export interface EmprendimientoDestacable {
+  id: string
+  nombre: string
+  plan: PlanId
+  suscripcionHasta?: string
 }
 
 /** Lo que se retiró del sitio al suspender o eliminar una cuenta. */

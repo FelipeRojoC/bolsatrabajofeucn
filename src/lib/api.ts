@@ -33,6 +33,7 @@ import type {
   ContenidoBorrado,
   CuentaPanel,
   Database,
+  EmprendimientoDestacable,
   Emprendimiento,
   EventKind,
   Feria,
@@ -525,6 +526,56 @@ export const cambiarClaveConCodigo = async (
   return { ok: true, user }
 }
 
+/** Las funciones de la base lanzan excepciones con texto listo para mostrar. */
+const mensajeRpc = (error: { message: string }): string => {
+  const limpio = error.message.replace(/^.*?:\s*/, '').trim()
+  return limpio || 'No se pudo completar la acción.'
+}
+
+/* ── Emprendimientos enlazados ───────────────────────────────────────────
+   El marco destacado es lo que se paga con el plan, así que quién puede usarlo
+   lo responde la base, no el navegador.                                       */
+
+/** El emprendimiento de la cuenta actual, si le habilita el marco destacado. */
+export const miEmprendimientoDestacable = async (): Promise<EmprendimientoDestacable | null> => {
+  const sb = await supabase()
+  if (!sb) return null
+  const { data, error } = await sb.rpc('mi_emprendimiento_destacable')
+  const fila = (data as Record<string, unknown>[] | null)?.[0]
+  if (error || !fila) return null
+  return {
+    id: String(fila.id),
+    nombre: String(fila.nombre),
+    plan: fila.plan as EmprendimientoDestacable['plan'],
+    suscripcionHasta: (fila.suscripcion_hasta as string) ?? undefined,
+  }
+}
+
+/** Cuelga un emprendimiento del correo de un estudiante ya registrado. */
+export const enlazarEmprendimiento = async (
+  empId: string,
+  correo: string,
+): Promise<{ ok: true; usuario: string } | { ok: false; motivo: string }> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+  const { data, error } = await sb.rpc('enlazar_emprendimiento', {
+    p_emprendimiento: empId,
+    p_correo: correo.trim().toLowerCase(),
+  })
+  if (error) return { ok: false, motivo: mensajeRpc(error) }
+  await sincronizar()
+  return { ok: true, usuario: String((data as Record<string, unknown>).usuario ?? '') }
+}
+
+export const desenlazarEmprendimiento = async (empId: string): Promise<ResultadoSimple> => {
+  const sb = await supabase()
+  if (!sb) return { ok: false, motivo: 'Falta configurar la conexión con la base de datos.' }
+  const { error } = await sb.rpc('desenlazar_emprendimiento', { p_emprendimiento: empId })
+  if (error) return { ok: false, motivo: mensajeRpc(error) }
+  await sincronizar()
+  return { ok: true }
+}
+
 /* ── Cuentas (solo administración) ───────────────────────────────────────
    Todo pasa por funciones de la base que comprueban el rol por dentro: la
    interfaz decide qué mostrar, la base decide qué se puede hacer.            */
@@ -554,12 +605,6 @@ export const listarCuentas = async (): Promise<CuentaPanel[]> => {
   const { data, error } = await sb.rpc('usuarios_panel')
   if (error || !data) return []
   return (data as Record<string, unknown>[]).map(filaACuenta)
-}
-
-const mensajeRpc = (error: { message: string }): string => {
-  // Las funciones lanzan excepciones con texto pensado para mostrarse tal cual.
-  const limpio = error.message.replace(/^.*?:\s*/, '').trim()
-  return limpio || 'No se pudo completar la acción.'
 }
 
 export type ResultadoCuenta =

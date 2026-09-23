@@ -1,10 +1,17 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import * as api from '../lib/api'
 import { CATEGORIAS, LUGARES, MAX_DIAS_VIGENCIA, TIPOS, puntoBase } from '../lib/constants'
 import { comprimirImagen } from '../lib/imagen'
 import { formatearPrecio } from '../lib/format'
-import type { ContactChannel, GeoPoint, LostKind, PostType, TipoLugar } from '../lib/types'
+import type {
+  ContactChannel,
+  EmprendimientoDestacable,
+  GeoPoint,
+  LostKind,
+  PostType,
+  TipoLugar,
+} from '../lib/types'
 import { Icono } from '../components/Iconos'
 import { Nota, PortadaGenerada } from '../components/UI'
 import { Mapa } from '../components/Mapa'
@@ -40,6 +47,20 @@ export const Publicar = () => {
   const [preferido, setPreferido] = useState<ContactChannel>('whatsapp')
   const [dias, setDias] = useState(MAX_DIAS_VIGENCIA)
   const [acepta, setAcepta] = useState(false)
+  const [destacar, setDestacar] = useState(false)
+  const [emprendimiento, setEmprendimiento] = useState<EmprendimientoDestacable | null>(null)
+
+  // Quién puede destacar lo responde la base: acá solo se consulta para saber
+  // si mostrar la casilla o no.
+  useEffect(() => {
+    let vigente = true
+    void api.miEmprendimientoDestacable().then((e) => {
+      if (vigente) setEmprendimiento(e)
+    })
+    return () => {
+      vigente = false
+    }
+  }, [usuario?.id])
 
   const zonasDisponibles = LUGARES.find((l) => l.tipo === lugar)?.zonas ?? []
   const esForo = type === 'perdido'
@@ -136,6 +157,7 @@ export const Publicar = () => {
         },
         autorId: usuario.id,
         diasVigencia: dias,
+        destacado: destacar && Boolean(emprendimiento),
         lostKind: esForo ? lostKind : undefined,
       })
       avisar('Aviso enviado a revisión', 'ok')
@@ -454,16 +476,51 @@ export const Publicar = () => {
               </span>
             </div>
 
+            {emprendimiento && !esForo && (
+              <div className="campo">
+                <span className="campo-titulo">Destacar el aviso</span>
+                <label className="opcion" style={{ cursor: 'pointer' }} aria-pressed={destacar}>
+                  <input
+                    type="checkbox"
+                    checked={destacar}
+                    onChange={(e) => setDestacar(e.target.checked)}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span className="crecer">
+                    <span className="opcion-titulo">Mostrarlo con el marco de colores</span>
+                    <span className="opcion-texto">
+                      Tu plan {emprendimiento.plan === 'pro' ? 'Pro' : 'Emprendedor'} de{' '}
+                      <strong>{emprendimiento.nombre}</strong> lo incluye. El aviso se ve con un marco que gira, así
+                      resalta entre los demás del feed.
+                    </span>
+                    {destacar && <span className="muestra-vitral" style={{ marginTop: 10, display: 'block' }} />}
+                  </span>
+                </label>
+                {emprendimiento.suscripcionHasta && (
+                  <span className="campo-ayuda">
+                    Vale mientras tu suscripción siga al día. Si vence, el marco se apaga solo y el aviso sigue
+                    publicado igual.
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Vista previa */}
             <div>
               <div className="mayus tenue" style={{ marginBottom: 8 }}>Así se va a ver</div>
-              <div className="tarjeta" style={{ maxWidth: 300, cursor: 'default' }}>
+              <div className={`tarjeta${destacar && emprendimiento ? ' destacada' : ''}`} style={{ maxWidth: 300, cursor: 'default' }}>
                 <div className="tarjeta-portada">
                   {imagenes[0] ? <img src={imagenes[0]} alt="" /> : <PortadaGenerada id="preview" tipo={type} />}
                   <span className="cinta-tipo">
                     <Icono nombre={type} tam={13} style={{ color: TIPOS[type].color }} />
                     {esForo ? (lostKind === 'encontrado' ? 'Encontrado' : 'Perdido') : TIPOS[type].label}
                   </span>
+                  {destacar && emprendimiento && (
+                    <span className="cinta-destacado" style={{ right: 10 }}>
+                      <span className="glifo-vitral" aria-hidden="true" />
+                      Emprendimiento
+                    </span>
+                  )}
                 </div>
                 <div className="tarjeta-cuerpo">
                   {!esForo && <span className="tarjeta-precio">{formatearPrecio(precio === '' ? undefined : Number(precio), precioNota)}</span>}
